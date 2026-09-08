@@ -89,7 +89,7 @@
             <input type="file" id="logo-upload" class="hidden" accept="image/*" onchange="window.cargarLogo(event)">
             
             <div>
-                <h1 class="text-xl font-bold leading-tight">Colegio Vida Sana Redénsión</h1>
+                <h1 class="text-xl font-bold leading-tight">Colegio Vida Sana Redensión</h1>
                 <p class="text-blue-200 text-sm">Súper Cuaderno (SIEE) - <span id="header-asignatura" class="font-bold text-yellow-300">Cargando...</span> <span id="badge-lectura" class="hidden ml-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded shadow">Solo Lectura</span></p>
             </div>
         </div>
@@ -195,20 +195,20 @@
     <div id="vista-impresion" class="print-only print-container"></div>
 
     <script type="module">
-        // Importaciones críticas de Firebase (Nube)
+        // Importaciones críticas de Firebase (Nube) - ¡Cambiado signInWithRedirect a signInWithPopup!
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // TUS LLAVES REALES INYECTADAS
         const firebaseConfig = {
-  apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
-  authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
-  projectId: "cuaderno-del-docente-3f438",
-  storageBucket: "cuaderno-del-docente-3f438.firebasestorage.app",
-  messagingSenderId: "156863682869",
-  appId: "1:156863682869:web:b164b4d8209014b496d47c"
-};
+            apiKey: "AIzaSyCveuu1973b4jBJpYgPEw4FQ8ZqWTZKvjs",
+            authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
+            projectId: "cuaderno-del-docente-3f438",
+            storageBucket: "cuaderno-del-docente-3f438.firebasestorage.app",
+            messagingSenderId: "156863682869",
+            appId: "1:156863682869:web:b164b4d8209014b496d47c"
+        };
         
         const appId = 'colegio-siee-app';
         let app, db, auth, user;
@@ -329,8 +329,14 @@
         };
 
         window.iniciarSesionGoogle = () => {
-            // Usamos Redirect en lugar de Popup para saltarnos los bloqueadores (Brave, Chrome)
-            signInWithRedirect(auth, provider);
+            // Usamos signInWithPopup para que abra una ventanita y NO nos devuelva al inicio
+            try {
+                signInWithPopup(auth, provider).catch((error) => {
+                    window.customAlert("Error de Firebase: " + error.message);
+                });
+            } catch (error) {
+                window.customAlert("⚠️ ALERTA DE SEGURIDAD: Google ha bloqueado el inicio de sesión porque estás abriendo este archivo directamente desde tu computadora (Modo Local). <br><br>Para que el botón funcione, debes abrir tu enlace oficial de GitHub (https://...)");
+            }
         };
 
         window.cerrarSesion = () => {
