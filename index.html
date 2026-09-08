@@ -90,7 +90,7 @@
             
             <div>
                 <h1 class="text-xl font-bold leading-tight">Colegio Vida Sana Redensión</h1>
-                <p class="text-blue-200 text-sm">Súper Cuaderno (SIEE) - <span id="header-asignatura" class="font-bold text-yellow-300">Cargando...</span></p>
+                <p class="text-blue-200 text-sm">Súper Cuaderno (SIEE) - <span id="header-asignatura" class="font-bold text-yellow-300">Cargando...</span> <span id="badge-lectura" class="hidden ml-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded shadow">Solo Lectura</span></p>
             </div>
         </div>
         <div class="flex items-center space-x-4">
@@ -120,8 +120,8 @@
                     <div class="flex gap-2">
                         <select id="asignatura-selector" class="flex-1 border border-blue-300 rounded p-1 text-sm font-bold text-gray-700 bg-white outline-none focus:border-blue-500" onchange="window.cambiarAsignatura()"></select>
                         <button onclick="window.nuevaAsignatura()" class="bg-blue-600 text-white px-2.5 py-1 rounded shadow hover:bg-blue-500 transition" title="Crear nueva asignatura"><i class="fa-solid fa-plus"></i></button>
-                        <button onclick="window.renombrarAsignatura()" class="bg-gray-600 text-white px-2.5 py-1 rounded shadow hover:bg-gray-500 transition" title="Renombrar asignatura"><i class="fa-solid fa-pen text-xs"></i></button>
-                        <button onclick="window.eliminarAsignatura()" class="bg-red-500 text-white px-2.5 py-1 rounded shadow hover:bg-red-400 transition" title="Eliminar asignatura"><i class="fa-solid fa-trash text-xs"></i></button>
+                        <button id="btn-renombrar-asig" onclick="window.renombrarAsignatura()" class="bg-gray-600 text-white px-2.5 py-1 rounded shadow hover:bg-gray-500 transition" title="Renombrar asignatura"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button id="btn-eliminar-asig" onclick="window.eliminarAsignatura()" class="bg-red-500 text-white px-2.5 py-1 rounded shadow hover:bg-red-400 transition" title="Eliminar asignatura"><i class="fa-solid fa-trash text-xs"></i></button>
                     </div>
                 </div>
 
@@ -142,7 +142,7 @@
                 <textarea id="dba-input" rows="2" class="w-full border border-gray-300 rounded p-2 text-sm focus:border-blue-500 outline-none" placeholder="Ej: Comprende el ciclo de vida..." onblur="window.guardarDBA()"></textarea>
                 
                 <div class="grid grid-cols-2 gap-2 mt-4">
-                    <button onclick="window.showMassiveView()" class="bg-yellow-500 hover:bg-yellow-400 text-white p-2 rounded text-sm font-medium transition shadow-sm">
+                    <button id="btn-vista-masiva" onclick="window.showMassiveView()" class="bg-yellow-500 hover:bg-yellow-400 text-white p-2 rounded text-sm font-medium transition shadow-sm">
                         <i class="fa-solid fa-bolt mr-1"></i> Rápido
                     </button>
                     <button onclick="window.printPlanilla()" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded text-sm font-medium transition shadow-sm">
@@ -157,7 +157,7 @@
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200" id="panel-estudiantes">
                 <form id="form-estudiante" class="mb-4 flex gap-2" onsubmit="window.agregarEstudiante(event)">
                     <input type="text" id="nuevo-estudiante" placeholder="Nombre del estudiante..." class="flex-1 border border-gray-300 rounded p-2 text-sm outline-none focus:border-blue-500" required>
                     <button type="submit" class="bg-gray-800 text-white px-3 rounded hover:bg-gray-700 transition shadow"><i class="fa-solid fa-plus"></i></button>
@@ -197,7 +197,7 @@
     <script type="module">
         // Importaciones críticas de Firebase (Nube)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // TUS LLAVES REALES INYECTADAS
@@ -219,6 +219,7 @@
         window.masterDB = {};
         window.asignaturaActiva = null;
         window.appState = null;
+        window.esPropietario = true;
         
         window.estudianteActivo = null;
         window.notaEnEdicion = null;
@@ -328,9 +329,8 @@
         };
 
         window.iniciarSesionGoogle = () => {
-            signInWithPopup(auth, provider).catch(error => {
-                window.customAlert("Error al iniciar sesión: " + error.message);
-            });
+            // Usamos Redirect en lugar de Popup para saltarnos los bloqueadores (Brave, Chrome)
+            signInWithRedirect(auth, provider);
         };
 
         window.cerrarSesion = () => {
@@ -360,9 +360,13 @@
                         const parsed = JSON.parse(localData);
                         if (parsed.masterDB) {
                             for(let asig in parsed.masterDB) {
+                                parsed.masterDB[asig].propietario = user.uid; // Asignar propiedad
+                                parsed.masterDB[asig].propietarioNombre = user.displayName;
                                 await setDoc(doc(asignaturasRef, asig), parsed.masterDB[asig]);
                             }
                         } else if (parsed.grados) {
+                            parsed.propietario = user.uid;
+                            parsed.propietarioNombre = user.displayName;
                             await setDoc(doc(asignaturasRef, "Ciencias Naturales"), parsed);
                         }
                         localStorage.setItem('migracion_exitosa_cvs', 'true');
@@ -372,6 +376,7 @@
                     // Crear Asignatura por defecto si no hay nada en ningún lado
                     const defaultState = {
                         gradoActivo: "3", logo: null,
+                        propietario: user.uid, propietarioNombre: user.displayName,
                         grados: { "1": { dba: "", estudiantes: [] }, "2": { dba: "", estudiantes: [] }, "3": { dba: "", estudiantes: [] }, "4": { dba: "", estudiantes: [] }, "5": { dba: "", estudiantes: [] } }
                     };
                     await setDoc(doc(asignaturasRef, "Ciencias Naturales"), defaultState);
@@ -412,6 +417,7 @@
                         }
                         
                         window.appState = window.masterDB[window.asignaturaActiva];
+                        window.verificarPropiedad();
                         
                         if(hizoMigracion) window.guardarEnNube(window.asignaturaActiva); // Guardar cambios migrados
                         
@@ -446,7 +452,31 @@
                 
                 window.asignaturaActiva = Object.keys(window.masterDB)[0];
                 window.appState = window.masterDB[window.asignaturaActiva];
+                window.verificarPropiedad();
                 window.actualizarUIComun();
+            }
+        };
+
+        window.verificarPropiedad = () => {
+            if(!user || !window.appState) return;
+            // Si la asignatura no tiene dueño (antigua), o el dueño es el usuario actual
+            if(!window.appState.propietario || window.appState.propietario === user.uid) {
+                window.esPropietario = true;
+                document.getElementById('badge-lectura').classList.add('hidden');
+                document.getElementById('btn-renombrar-asig').classList.remove('hidden');
+                document.getElementById('btn-eliminar-asig').classList.remove('hidden');
+                document.getElementById('dba-input').disabled = false;
+                document.getElementById('btn-vista-masiva').classList.remove('hidden');
+                document.getElementById('form-estudiante').classList.remove('hidden');
+            } else {
+                window.esPropietario = false;
+                document.getElementById('badge-lectura').classList.remove('hidden');
+                document.getElementById('badge-lectura').innerText = `Solo Lectura (Prof. ${window.appState.propietarioNombre || 'Otro'})`;
+                document.getElementById('btn-renombrar-asig').classList.add('hidden');
+                document.getElementById('btn-eliminar-asig').classList.add('hidden');
+                document.getElementById('dba-input').disabled = true;
+                document.getElementById('btn-vista-masiva').classList.add('hidden');
+                document.getElementById('form-estudiante').classList.add('hidden');
             }
         };
 
@@ -489,6 +519,7 @@
             window.appState = window.masterDB[window.asignaturaActiva];
             window.estudianteActivo = null;
             window.notaEnEdicion = null;
+            window.verificarPropiedad();
             document.getElementById('contenido-dinamico').classList.add('hidden');
             document.getElementById('mensaje-vacio').classList.remove('hidden');
             window.actualizarUIComun();
@@ -516,11 +547,14 @@
                 window.masterDB[nombre] = {
                     gradoActivo: window.appState.gradoActivo,
                     logo: window.appState.logo,
+                    propietario: user ? user.uid : "local",
+                    propietarioNombre: user ? (user.displayName || user.email) : "Local",
                     grados: gradosClonados
                 };
                 
                 window.asignaturaActiva = nombre;
                 window.appState = window.masterDB[nombre];
+                window.verificarPropiedad();
                 await window.guardarEnNube(nombre);
                 window.showToast("Asignatura creada y listado clonado", "success");
             });
@@ -763,6 +797,7 @@
 
                 ${p.def > 0 && p.def < 3.0 ? `<div class="bg-red-50 border-l-4 border-red-500 p-3 mb-4 rounded shadow-sm"><p class="text-sm text-red-700 font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Requiere Nivelación</p></div>` : ''}
 
+                ${window.esPropietario ? `
                 <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6 no-print shadow-sm">
                     <form onsubmit="window.agregarNota(event)" class="flex gap-3 items-end">
                         <div class="w-32">
@@ -794,6 +829,7 @@
                     </form>
                     <p class="text-[10px] text-blue-500 mt-2 font-medium"><i class="fa-solid fa-brain mr-1"></i> Memoria Inteligente retendrá los datos al cambiar de alumno.</p>
                 </div>
+                ` : `<div class="bg-red-50 p-3 rounded border border-red-200 mb-6 text-red-700 text-sm font-bold text-center"><i class="fa-solid fa-lock mr-2"></i>No puedes agregar o editar notas porque no eres el titular de la asignatura.</div>`}
 
                 <table class="w-full text-sm border-collapse mb-6">
                     <thead>
@@ -816,8 +852,10 @@
                                 <td class="p-2 text-center font-black">${n.valor}</td>
                                 <td class="p-2 text-center text-red-500 font-bold">${n.asistio ? '' : 'X'}</td>
                                 <td class="p-2 text-right no-print">
+                                    ${window.esPropietario ? `
                                     <button onclick="window.cargarEdicionNota(${idx})" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fa-solid fa-pen"></i></button>
                                     <button onclick="window.eliminarNota(${idx})" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                                    ` : `<i class="fa-solid fa-lock text-gray-300"></i>`}
                                 </td>
                             </tr>
                         `).join('')}
@@ -826,7 +864,7 @@
 
                 <div class="border-t-2 border-gray-200 pt-4 mt-6">
                     <h3 class="font-bold text-gray-700 mb-2"><i class="fa-solid fa-book-open text-blue-500 mr-2"></i>Observaciones</h3>
-                    <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" onblur="window.guardarObservacionSilenciosa()">${est.observacion}</textarea>
+                    <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" onblur="window.guardarObservacionSilenciosa()" ${!window.esPropietario ? 'disabled' : ''}>${est.observacion}</textarea>
                 </div>
             `;
         };
@@ -875,6 +913,10 @@
             } else { est.notas.push(nueva); }
             
             window.guardarEnNube();
+            
+            // Forzar actualización visual para que la nota corregida aparezca al instante
+            window.renderVistaIndividual();
+            window.renderListaEstudiantes();
         };
 
         window.eliminarNota = (idx) => {
@@ -966,17 +1008,19 @@
                             ${iH}
                         </div>
                         <div>
-                            <h1 class="text-xl font-bold text-gray-900 m-0">Colegio Vida Sana Redensión</h1>
+                            <h1 class="text-xl font-bold text-gray-900 m-0">COLEGIO VIDA SANA REDENSIÓN</h1>
                             <p class="text-[10px] text-gray-600 m-0 leading-tight mt-1">
                                 Código del DANE No. 425290002398 aprobado MEN<br>
                                 Según Resolución 0007 del 15 de Febrero de 2011<br>
-                                Finca Chicalá vereda La Palma - Teléfono: 3208466868
+                                Finca Chicalá Vereda La Palma - Teléfono 3208466868<br>
+                                Fusagasugá - Cundinamarca
                             </p>
                         </div>
                     </div>
                     <div class="text-right">
                         <h2 class="font-bold text-lg text-blue-800 m-0">${titulo}</h2>
-                        <p class="text-sm text-gray-600 m-0">${subtitulo}</p>
+                        <p class="text-sm text-gray-600 m-0 font-bold">${subtitulo}</p>
+                        <p class="text-xs text-gray-500 m-0">Año Lectivo: ${new Date().getFullYear()}</p>
                     </div>
                 </div>
             `;
@@ -1030,17 +1074,18 @@
                         if(estAsig) {
                             let promedios = window.calcularPromedios(estAsig.notas);
                             let des = window.getDesempeno(promedios.def);
+                            let dbaMateria = asigData.grados[grado].dba || "<span style='color:gray; font-style:italic;'>Sin indicador de desempeño registrado.</span>";
                             
                             sumaDefinitivas += parseFloat(promedios.def);
                             totalAsignaturas++;
 
                             filasAsignaturas += `
                                 <tr>
-                                    <td style="border:1px solid #000; padding:10px; font-weight:bold;">${asigNombre}</td>
+                                    <td style="border:1px solid #000; padding:10px; font-weight:bold; background-color:#f9fafb;">${asigNombre}</td>
+                                    <td style="border:1px solid #000; padding:10px; font-size:11px; text-align:justify;">${dbaMateria}</td>
                                     <td style="border:1px solid #000; padding:10px; text-align:center; font-size:16px;"><b>${promedios.def}</b></td>
                                     <td style="border:1px solid #000; padding:10px; text-align:center;">${des.texto}</td>
                                     <td style="border:1px solid #000; padding:10px; text-align:center;">${100 - promedios.asistencia}%</td>
-                                    <td style="border:1px solid #000; padding:10px; font-size:11px;">${estAsig.observacion || '-'}</td>
                                 </tr>
                             `;
                         }
@@ -1052,17 +1097,17 @@
                 let desGeneral = window.getDesempeno(promedioGeneral);
 
                 htmlFinal += `
-                    <div style="page-break-after: always; padding: 20px;">
-                        ${window.getHeaderImpresion(`Boletín Informativo General - Grado ${grado}°`, `Estudiante: ${est.nombre}`)}
+                    <div style="page-break-after: always; padding: 10px;">
+                        ${window.getHeaderImpresion(`INFORME PEDAGÓGICO - GRADO ${grado}°`, `ESTUDIANTE: ${est.nombre}`)}
 
-                        <table style="width:100%; border-collapse: collapse; margin-top: 30px; font-size: 13px;">
+                        <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 13px;">
                             <thead>
                                 <tr style="background:#1e3a8a; color:white;">
-                                    <th style="border:1px solid #000; padding:10px; text-align:left;">Asignatura</th>
-                                    <th style="border:1px solid #000; padding:10px; text-align:center;">Definitiva</th>
-                                    <th style="border:1px solid #000; padding:10px; text-align:center;">Desempeño</th>
-                                    <th style="border:1px solid #000; padding:10px; text-align:center;">Fallas</th>
-                                    <th style="border:1px solid #000; padding:10px; text-align:left;">Observación del Docente</th>
+                                    <th style="border:1px solid #000; padding:10px; text-align:center; width: 18%;">Campos de Formación</th>
+                                    <th style="border:1px solid #000; padding:10px; text-align:center; width: 50%;">Indicadores de Desempeño</th>
+                                    <th style="border:1px solid #000; padding:10px; text-align:center; width: 10%;">Definitiva</th>
+                                    <th style="border:1px solid #000; padding:10px; text-align:center; width: 12%;">Desempeño</th>
+                                    <th style="border:1px solid #000; padding:10px; text-align:center; width: 10%;">Fallas</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1070,20 +1115,26 @@
                             </tbody>
                             <tfoot>
                                 <tr style="background:#e5e7eb;">
-                                    <td style="border:1px solid #000; padding:12px; text-align:right; font-weight:black;">PROMEDIO GENERAL:</td>
+                                    <td style="border:1px solid #000; padding:12px; text-align:right; font-weight:black;" colspan="2">PROMEDIO GENERAL DEL ESTUDIANTE:</td>
                                     <td style="border:1px solid #000; padding:12px; text-align:center; font-size: 18px; font-weight:black;">${promedioGeneral}</td>
                                     <td style="border:1px solid #000; padding:12px; text-align:center; font-weight:bold;">${desGeneral.texto}</td>
-                                    <td style="border:1px solid #000; padding:12px; text-align:center;" colspan="2"></td>
+                                    <td style="border:1px solid #000; padding:12px; text-align:center;"></td>
                                 </tr>
                             </tfoot>
                         </table>
 
-                        <div style="margin-top: 15px; padding: 10px; border: 1px dashed #9ca3af; background-color: #f9fafb; font-size: 11px; text-align: center; border-radius: 4px;">
-                            <strong>ESCALA DE VALORACIÓN INSTITUCIONAL (SIEE):</strong><br>
-                            <span style="color:#b91c1c; font-weight:bold;">Bajo:</span> 1.0 a 2.9 &nbsp;|&nbsp;
-                            <span style="color:#a16207; font-weight:bold;">Básico:</span> 3.0 a 3.9 &nbsp;|&nbsp;
-                            <span style="color:#15803d; font-weight:bold;">Alto:</span> 4.0 a 4.5 &nbsp;|&nbsp;
-                            <span style="color:#6d28d9; font-weight:bold;">Superior:</span> 4.6 a 5.0
+                        <div style="margin-top: 20px; display: flex; gap: 20px; page-break-inside: avoid;">
+                            <div style="flex: 1; padding: 10px; border: 1px solid #000; font-size: 12px; height: 80px;">
+                                <strong>OBSERVACIONES:</strong><br>
+                                <span style="color:gray; font-style:italic;">(Espacio para anotaciones del director de grupo)</span>
+                            </div>
+                            <div style="width: 250px; padding: 10px; border: 1px solid #000; font-size: 11px; text-align: left; background-color: #f9fafb;">
+                                <strong style="display:block; text-align:center; margin-bottom:5px;">ESCALA SIEE</strong>
+                                <div style="display:flex; justify-content:space-between;"><span>SUPERIOR</span> <span>4.6 - 5.0</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span>ALTO</span> <span>4.0 - 4.5</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span>BÁSICO</span> <span>3.0 - 3.9</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span>BAJO</span> <span>1.0 - 2.9</span></div>
+                            </div>
                         </div>
 
                         <div style="margin-top: 60px; display: flex; justify-content: space-around; text-align: center; font-size: 14px; page-break-inside: avoid;">
@@ -1093,7 +1144,7 @@
                             </div>
                             <div>
                                 <div style="border-top: 1px solid black; width: 250px; margin: 0 auto 10px;"></div>
-                                Firma Acudiente
+                                Firma Coordinación
                             </div>
                         </div>
                     </div>
@@ -1170,6 +1221,14 @@
                         throw new Error("Archivo vacío.");
                     }
 
+                    // Asignar propiedad al restaurar
+                    for(let asig in datosExtraidos) {
+                        if(!datosExtraidos[asig].propietario && typeof user !== 'undefined' && user) {
+                            datosExtraidos[asig].propietario = user.uid;
+                            datosExtraidos[asig].propietarioNombre = user.displayName;
+                        }
+                    }
+
                     window.masterDB = datosExtraidos;
                     
                     if(data.logo) {
@@ -1181,6 +1240,7 @@
                     window.asignaturaActiva = Object.keys(window.masterDB)[0];
                     window.appState = window.masterDB[window.asignaturaActiva];
                     
+                    window.verificarPropiedad();
                     window.estudianteActivo = null;
                     window.notaEnEdicion = null;
 
