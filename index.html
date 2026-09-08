@@ -63,6 +63,19 @@
         <p class="text-gray-500 text-sm mt-2">Sincronizando base de datos institucional</p>
     </div>
 
+    <!-- Pantalla de Login -->
+    <div id="login-screen" class="fixed inset-0 z-50 bg-blue-900 flex flex-col items-center justify-center no-print transition-opacity duration-500 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full">
+            <i class="fa-solid fa-shield-halved text-5xl text-blue-600 mb-4"></i>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Acceso Docentes</h2>
+            <p class="text-gray-500 text-sm mb-6">Inicia sesión con tu cuenta de Google para acceder al Súper Cuaderno.</p>
+            <button onclick="window.iniciarSesionGoogle()" class="w-full bg-white border border-gray-300 text-gray-700 font-bold py-2 px-4 rounded flex items-center justify-center gap-2 hover:bg-gray-50 transition shadow-sm">
+                <i class="fa-brands fa-google text-red-500"></i>
+                Ingresar con Google
+            </button>
+        </div>
+    </div>
+
     <!-- Barra Superior -->
     <nav class="bg-blue-800 text-white shadow-md p-4 no-print flex justify-between items-center relative z-30">
         <div class="flex items-center space-x-3">
@@ -81,9 +94,16 @@
             </div>
         </div>
         <div class="flex items-center space-x-4">
+            <div id="user-info" class="hidden items-center gap-2 mr-2">
+                <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-blue-400 shadow-sm">
+                <span id="user-name" class="text-xs font-bold text-blue-200"></span>
+            </div>
             <span class="flex items-center text-sm font-medium text-green-300 bg-blue-900 px-3 py-1.5 rounded-full shadow-inner border border-blue-700">
                 <i class="fa-solid fa-cloud text-green-400 mr-2 animate-pulse"></i> Nube Activa
             </span>
+            <button onclick="window.cerrarSesion()" class="text-xs bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded shadow transition" title="Cerrar Sesión">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
         </div>
     </nav>
 
@@ -177,7 +197,7 @@
     <script type="module">
         // Importaciones críticas de Firebase (Nube)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // TUS LLAVES REALES INYECTADAS
@@ -192,6 +212,8 @@
         
         const appId = 'colegio-siee-app';
         let app, db, auth, user;
+        const provider = new GoogleAuthProvider();
+        let isSyncing = false; // Evita que se inicie la nube dos veces
 
         // Estructura Base de Datos en Memoria (Espejo de la Nube)
         window.masterDB = {};
@@ -270,7 +292,6 @@
 
         const inicializarFirebase = async () => {
             if(!firebaseConfig.apiKey || firebaseConfig.apiKey === "TU_API_KEY") {
-                // Modo Fallback si no hay config real de Firebase (ya no aplica porque tienes llaves reales)
                 document.getElementById('loading-screen').classList.add('hidden');
                 window.customAlert("Modo de Prueba Local.");
                 return;
@@ -280,11 +301,51 @@
             db = getFirestore(app);
             auth = getAuth(app);
 
+            // Escuchar si el usuario ya inició sesión con Google
+            onAuthStateChanged(auth, (loggedUser) => {
+                if (loggedUser) {
+                    user = loggedUser;
+                    
+                    // Ocultar pantalla de login y mostrar perfil
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('loading-screen').classList.remove('hidden');
+                    
+                    document.getElementById('user-info').classList.remove('hidden');
+                    document.getElementById('user-info').classList.add('flex');
+                    document.getElementById('user-avatar').src = user.photoURL || 'https://via.placeholder.com/32';
+                    document.getElementById('user-name').innerText = user.displayName || user.email;
+
+                    iniciarNube(); // Solo conectamos a la base de datos si está logueado
+                } else {
+                    // Si no hay usuario, obligarlo a iniciar sesión
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('login-screen').classList.remove('hidden');
+                    
+                    document.getElementById('user-info').classList.add('hidden');
+                    document.getElementById('user-info').classList.remove('flex');
+                }
+            });
+        };
+
+        window.iniciarSesionGoogle = () => {
+            signInWithPopup(auth, provider).catch(error => {
+                window.customAlert("Error al iniciar sesión: " + error.message);
+            });
+        };
+
+        window.cerrarSesion = () => {
+            window.customConfirm("¿Seguro que deseas salir del Súper Cuaderno?", () => {
+                signOut(auth).then(() => {
+                    window.location.reload(); // Recarga la página para limpiar la memoria
+                });
+            });
+        };
+
+        const iniciarNube = async () => {
+            if (isSyncing) return;
+            isSyncing = true;
+
             try {
-                // Forzamos SIEMPRE el inicio de sesión anónimo hacia TU base de datos
-                const cred = await signInAnonymously(auth);
-                user = cred.user;
-                
                 // Conectamos a la colección pública compartida del colegio
                 const asignaturasRef = collection(db, 'artifacts', appId, 'public', 'data', 'asignaturas');
                 
