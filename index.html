@@ -208,7 +208,7 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDocs, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // LLAVES MAESTRAS CORREGIDAS
+        // LLAVES MAESTRAS CORREGIDAS Y DEFINITIVAS
         const firebaseConfig = {
             apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
@@ -222,7 +222,7 @@
         let app, db, auth, user;
         let isSyncing = false;
         
-        window.unsubNube = null; 
+        window.unsubNube = null; // Guardián de la conexión
 
         // Estructura Base de Datos en Memoria
         window.masterDB = {};
@@ -243,7 +243,10 @@
         const btnConfirm = document.getElementById('modal-btn-confirm');
         
         window.cerrarModal = () => {
-            modalEl.classList.remove('modal-show');
+            modalEl.classList.remove('opacity-100', 'pointer-events-auto');
+            modalEl.classList.add('opacity-0', 'pointer-events-none');
+            modalBox.classList.remove('scale-100');
+            modalBox.classList.add('scale-95');
             setTimeout(() => { modalEl.classList.add('hidden'); }, 200);
         };
 
@@ -268,7 +271,11 @@
 
             modalEl.classList.remove('hidden');
             void modalEl.offsetWidth;
-            modalEl.classList.add('modal-show');
+            
+            modalEl.classList.remove('opacity-0', 'pointer-events-none');
+            modalEl.classList.add('opacity-100', 'pointer-events-auto');
+            modalBox.classList.remove('scale-95');
+            modalBox.classList.add('scale-100');
         };
 
         window.customAlert = (msg) => abrirModal('<i class="fa-solid fa-circle-info text-blue-500"></i> Información', msg, false, false, null);
@@ -344,19 +351,25 @@
         window.cerrarSesion = () => {
             window.customConfirm("¿Seguro que deseas salir del Súper Cuaderno?", async () => {
                 try {
-                    // Try to safely detach listeners so the cloud doesn't throw errors
-                    if (window.unsubNube) { try { window.unsubNube(); } catch(e){} }
+                    // 1. Apagamos la nube para evitar que al cerrar sesión Firebase grite "permiso denegado"
+                    if (window.unsubNube) {
+                        window.unsubNube();
+                        window.unsubNube = null;
+                    }
+                    isSyncing = false; // Reiniciamos la bandera
                     
+                    // 2. Mostramos la pantalla de salida
                     document.getElementById('load-icon').className = "fa-solid fa-door-open text-5xl text-blue-500 mb-4 animate-pulse";
                     document.getElementById('load-text').innerText = "Cerrando sesión...";
                     document.getElementById('load-subtext').innerText = "Vuelve pronto";
                     document.getElementById('loading-screen').classList.remove('hidden', 'opacity-0');
                     
+                    // 3. Cerramos sesión
                     await signOut(auth);
                 } catch(error) {
-                    console.log("Error menor al salir:", error);
+                    console.log("Error al salir:", error);
                 } finally {
-                    // This guarantees the page will refresh and the user is completely logged out
+                    // 4. Recargamos la página incondicionalmente
                     window.location.reload();
                 }
             });
@@ -369,6 +382,7 @@
             try {
                 const asignaturasRef = collection(db, 'artifacts', appId, 'public', 'data', 'asignaturas');
                 
+                // Iniciamos la conexión en tiempo real
                 window.unsubNube = onSnapshot(asignaturasRef, (snapshot) => {
                     const nuevasAsig = {};
                     let logoGlobal = null;
@@ -408,8 +422,8 @@
                         setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
                     }
                 }, (error) => {
-                    console.error("Aviso de Nube:", error);
-                    // No mostramos un alert intrusivo aquí, ya que a veces Firebase envía un pequeño error al desconectarse.
+                    // Si hay un error, lo ocultamos para que el "fantasma" no congele la pantalla del profe
+                    console.warn("Aviso de Nube silenciado para evitar bloqueos:", error);
                 });
 
             } catch(e) {
