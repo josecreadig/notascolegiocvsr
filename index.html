@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Súper Cuaderno del Docente</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+        .login-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        input {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .loader {
+            display: none;
+            margin-top: 15px;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .error-message {
+            display: none;
+            margin-top: 15px;
+            color: #dc3545;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>Súper Cuaderno</h2>
+        <input type="email" id="email" placeholder="Correo electrónico del docente" required>
+        <input type="password" id="password" placeholder="Contraseña" required>
+        <button id="loginBtn">Acceder al Panel</button>
+        <div id="loader" class="loader">Validando credenciales...</div>
+        <div id="error-message" class="error-message"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+        // Reemplaza "TU_API_KEY", "TU_SENDER_ID" y "TU_APP_ID" con los datos de tu consola de Firebase
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
+            projectId: "cuaderno-del-docente-3f438",
+            storageBucket: "cuaderno-del-docente-3f438.appspot.com",
+            messagingSenderId: "TU_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const loginBtn = document.getElementById("loginBtn");
+        const loader = document.getElementById("loader");
+        const errorMessage = document.getElementById("error-message");
+
+        loginBtn.addEventListener("click", () => {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            
+            if(!email || !password) {
+                errorMessage.style.display = "block";
+                errorMessage.innerText = "Por favor, completa ambos campos.";
+                return;
+            }
+
+            loginBtn.style.display = "none";
+            loader.style.display = "block";
+            errorMessage.style.display = "none";
+            
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    // Acceso exitoso. Redirigir a la vista de la aplicación
+                    errorMessage.style.color = "green";
+                    errorMessage.style.display = "block";
+                    errorMessage.innerText = "¡Acceso concedido!";
+                    
+                    // Aquí colocas la URL del panel principal de tu web app
+                    // window.location.href = "panel.html"; 
+                })
+                .catch((error) => {
+                    loginBtn.style.display = "block";
+                    loader.style.display = "none";
+                    errorMessage.style.display = "block";
+                    errorMessage.style.color = "#dc3545";
+                    errorMessage.innerText = "Credenciales incorrectas o usuario no registrado.";
+                });
+        });
+    </script>
+</body>
+</html>
