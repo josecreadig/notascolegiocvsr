@@ -80,14 +80,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
-        // Reemplaza "TU_API_KEY", "TU_SENDER_ID" y "TU_APP_ID" con los datos de tu consola de Firebase
+        // Credenciales exactas de tu proyecto
         const firebaseConfig = {
-            apiKey: "TU_API_KEY",
+            apiKey: "AIzaSyCveuuI973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
             projectId: "cuaderno-del-docente-3f438",
-            storageBucket: "cuaderno-del-docente-3f438.appspot.com",
-            messagingSenderId: "TU_SENDER_ID",
-            appId: "TU_APP_ID"
+            storageBucket: "cuaderno-del-docente-3f438.firebasestorage.app",
+            messagingSenderId: "156863682869",
+            appId: "1:156863682869:web:b164b4d8209014b496d47c"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -113,12 +113,11 @@
             
             signInWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
-                    // Acceso exitoso. Redirigir a la vista de la aplicación
                     errorMessage.style.color = "green";
                     errorMessage.style.display = "block";
                     errorMessage.innerText = "¡Acceso concedido!";
                     
-                    // Aquí colocas la URL del panel principal de tu web app
+                    // Redirección directa a tu aplicación
                     window.location.href = "panel.html"; 
                 })
                 .catch((error) => {
@@ -126,7 +125,8 @@
                     loader.style.display = "none";
                     errorMessage.style.display = "block";
                     errorMessage.style.color = "#dc3545";
-                    errorMessage.innerText = "Credenciales incorrectas o usuario no registrado.";
+                    // Ahora mostrará el error exacto de Firebase
+                    errorMessage.innerText = "Error: " + error.message;
                 });
         });
     </script>
