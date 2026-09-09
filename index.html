@@ -255,10 +255,10 @@
 
             // Quitar el display:none primero
             modalEl.classList.remove('hidden');
-            // Forzar que el navegador repinte la pantalla para que la animación funcione
+            // Forzar que el navegador repinte la pantalla
             void modalEl.offsetWidth;
             
-            // Hacer visible y clicable el modal quitando la opacidad cero
+            // Hacer visible el modal quitando la opacidad cero
             modalEl.classList.remove('opacity-0', 'pointer-events-none');
             modalEl.classList.add('opacity-100', 'pointer-events-auto');
             modalBox.classList.remove('scale-95');
@@ -330,7 +330,15 @@
                 .catch((error) => {
                     btn.innerText = "Acceder al Panel";
                     btn.disabled = false;
-                    errorMsg.innerText = "Error: Correo o contraseña incorrectos.";
+                    
+                    // Mostrar el error exacto para diagnosticar
+                    if(error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                        errorMsg.innerText = "Error: Usuario no registrado o contraseña incorrecta. ¿Ya lo creaste en Firebase?";
+                    } else if(error.code === 'auth/invalid-api-key') {
+                        errorMsg.innerText = "Error: La API Key no es válida.";
+                    } else {
+                        errorMsg.innerText = "Error de Firebase: " + error.code;
+                    }
                     errorMsg.classList.remove('hidden');
                 });
         };
@@ -338,7 +346,7 @@
         window.cerrarSesion = () => {
             window.customConfirm("¿Seguro que deseas salir del Súper Cuaderno?", async () => {
                 try {
-                    // Primero desconectamos el escáner de la nube
+                    // Primero desconectamos el escáner de la nube para evitar el "error de sincronización"
                     if (window.unsubNube) {
                         window.unsubNube();
                         window.unsubNube = null;
@@ -355,7 +363,7 @@
                 } catch(error) {
                     console.log("Error al salir:", error);
                 } finally {
-                    // Y recargamos incondicionalmente
+                    // Recargamos incondicionalmente
                     window.location.reload();
                 }
             });
@@ -378,7 +386,7 @@
                     });
                     
                     if(Object.keys(nuevasAsig).length > 0) {
-                        // Guardar la vista local actual para no interrumpir al profesor que está leyendo (Salto Grado Reparado)
+                        // Guardar la vista local actual para no interrumpir al profesor invitado cuando cambie de grado
                         const vistaAsigAnterior = window.asignaturaActiva;
                         const vistaGradoAnterior = window.appState ? window.appState.gradoActivo : null;
 
@@ -418,7 +426,7 @@
         window.verificarPropiedad = () => {
             if(!user || !window.appState) return;
             
-            // Administrador Supremo (tu correo) siempre tiene acceso total
+            // Administrador Supremo o Dueño original tienen acceso total
             const esDuenoOriginal = !window.appState.propietario || window.appState.propietario === user.uid;
             const esAdminSupremo = (user.email && user.email.toLowerCase() === "josecreadig@gmail.com");
             
@@ -449,7 +457,6 @@
             try {
                 await setDoc(asigRef, window.masterDB[targetAsig]);
             } catch(e) {
-                // Silenciado visualmente para que si un invitado cambia de grado no salga error
                 console.log("No tienes permiso de guardado en esta materia.");
             }
         };
@@ -832,8 +839,8 @@
                 </table>
 
                 <div class="border-t-2 border-gray-200 pt-4 mt-6">
-                    <h3 class="font-bold text-gray-700 mb-2"><i class="fa-solid fa-book-open text-blue-500 mr-2"></i>Observaciones</h3>
-                    <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" onblur="window.guardarObservacionSilenciosa()" ${!window.esPropietario ? 'disabled' : ''}>${est.observacion}</textarea>
+                    <h3 class="font-bold text-gray-700 mb-2"><i class="fa-solid fa-book-open text-blue-500 mr-2"></i>Bitácora de Observaciones del Docente</h3>
+                    <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" placeholder="Anotaciones privadas del docente (ej. comportamiento, tareas)..." onblur="window.guardarObservacionSilenciosa()" ${!window.esPropietario ? 'disabled' : ''}>${est.observacion}</textarea>
                 </div>
             `;
         };
@@ -1013,7 +1020,7 @@
             let ests = [...window.appState.grados[window.appState.gradoActivo].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
             let html = `${window.getHeaderImpresion(`Planilla - Grado ${window.appState.gradoActivo}°`, `Asignatura: ${window.asignaturaActiva}`)}
                 <table style="width:100%; border-collapse:collapse; font-size:11px;">
-                    <thead><tr style="background:#f3f4f6; border:1px solid #000;"><th style="border:1px solid #000; padding:4px;">No.</th><th style="border:1px solid #000; padding:4px; text-align:left;">Estudiante</th><th style="border:1px solid #000; padding:4px;">Comp(30)</th><th style="border:1px solid #000; padding:4px;">Part(10)</th><th style="border:1px solid #000; padding:4px;">Act(20)</th><th style="border:1px solid #000; padding:4px;">Exam(40)</th><th style="border:1px solid #000; padding:4px;">Def</th><th style="border:1px solid #000; padding:4px;">Fallas</th><th style="border:1px solid #000; padding:4px; text-align:left;">Observación (DBA)</th></tr></thead><tbody>`;
+                    <thead><tr style="background:#f3f4f6; border:1px solid #000;"><th style="border:1px solid #000; padding:4px;">No.</th><th style="border:1px solid #000; padding:4px; text-align:left;">Estudiante</th><th style="border:1px solid #000; padding:4px;">Comp(30)</th><th style="border:1px solid #000; padding:4px;">Part(10)</th><th style="border:1px solid #000; padding:4px;">Act(20)</th><th style="border:1px solid #000; padding:4px;">Exam(40)</th><th style="border:1px solid #000; padding:4px;">Def</th><th style="border:1px solid #000; padding:4px;">Fallas</th><th style="border:1px solid #000; padding:4px; text-align:left;">Bitácora Docente</th></tr></thead><tbody>`;
             ests.forEach((e, i) => {
                 let p = window.calcularPromedios(e.notas);
                 html += `<tr><td style="border:1px solid #000; text-align:center;">${i+1}</td><td style="border:1px solid #000;"><b>${e.nombre}</b></td><td style="border:1px solid #000; text-align:center;">${p.comp}</td><td style="border:1px solid #000; text-align:center;">${p.part}</td><td style="border:1px solid #000; text-align:center;">${p.act}</td><td style="border:1px solid #000; text-align:center;">${p.exa}</td><td style="border:1px solid #000; text-align:center; font-weight:bold;">${p.def}</td><td style="border:1px solid #000; text-align:center;">${p.totalClases>0?((100-p.asistencia)/100*p.totalClases).toFixed(0):0}</td><td style="border:1px solid #000;">${e.observacion}</td></tr>`;
@@ -1028,6 +1035,10 @@
             let grado = window.appState.gradoActivo;
             let estudiantesMaster = [...window.appState.grados[grado].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
             if(estudiantesMaster.length === 0) return window.customAlert("No hay estudiantes matriculados en este grado.");
+            
+            // Guardar bitácora activa silenciosamente antes de imprimir
+            if(document.getElementById('obs-estudiante')) window.guardarObservacionSilenciosa();
+            
             let htmlFinal = "";
 
             estudiantesMaster.forEach((est) => {
@@ -1042,17 +1053,17 @@
                         if(estAsig) {
                             let promedios = window.calcularPromedios(estAsig.notas);
                             let des = window.getDesempeno(promedios.def);
-                            let dbaMateria = asigData.grados[grado].dba || "<span style='color:gray; font-style:italic;'>Sin indicador de desempeño registrado.</span>";
+                            let dbaMateria = asigData.grados[grado].dba || "<span style='color:#9ca3af; font-style:italic;'>Sin indicador de desempeño registrado.</span>";
                             sumaDefinitivas += parseFloat(promedios.def);
                             totalAsignaturas++;
 
                             filasAsignaturas += `
-                                <tr>
-                                    <td style="border:1px solid #000; padding:10px; font-weight:bold; background-color:#f9fafb;">${asigNombre}</td>
-                                    <td style="border:1px solid #000; padding:10px; font-size:11px; text-align:justify;">${dbaMateria}</td>
-                                    <td style="border:1px solid #000; padding:10px; text-align:center; font-size:16px;"><b>${promedios.def}</b></td>
-                                    <td style="border:1px solid #000; padding:10px; text-align:center;">${des.texto}</td>
-                                    <td style="border:1px solid #000; padding:10px; text-align:center;">${100 - promedios.asistencia}%</td>
+                                <tr style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="border:1px solid #94a3b8; padding:12px; font-weight:bold; background-color:#f8fafc; color:#1e293b;">${asigNombre}</td>
+                                    <td style="border:1px solid #94a3b8; padding:12px; font-size:11px; text-align:justify; color:#334155;">${dbaMateria}</td>
+                                    <td style="border:1px solid #94a3b8; padding:12px; text-align:center; font-size:16px; font-weight:900; color:#0f172a;">${promedios.def}</td>
+                                    <td style="border:1px solid #94a3b8; padding:12px; text-align:center; font-weight:600; color:#334155;">${des.texto}</td>
+                                    <td style="border:1px solid #94a3b8; padding:12px; text-align:center; color:#64748b;">${100 - promedios.asistencia}%</td>
                                 </tr>
                             `;
                         }
@@ -1061,46 +1072,93 @@
 
                 let promedioGeneral = totalAsignaturas > 0 ? (sumaDefinitivas / totalAsignaturas).toFixed(1) : "0.0";
                 let desGeneral = window.getDesempeno(promedioGeneral);
+                
+                // LÓGICA AUTOMÁTICA DE RECOMENDACIONES (Desvinculada de la Bitácora del docente)
+                let recomendacionAutomatica = "";
+                if (desGeneral.texto === "Superior") {
+                    recomendacionAutomatica = "Demuestra un excelente compromiso y apropiación de los saberes. Se recomienda continuar con ese nivel de excelencia y liderazgo académico.";
+                } else if (desGeneral.texto === "Alto") {
+                    recomendacionAutomatica = "Mantiene un buen ritmo de aprendizaje y participación. Se sugiere seguir fortaleciendo sus hábitos de estudio para alcanzar la excelencia.";
+                } else if (desGeneral.texto === "Básico") {
+                    recomendacionAutomatica = "Alcanza los logros mínimos requeridos. Se recomienda mayor dedicación, repaso constante en casa y participación activa para superar sus dificultades.";
+                } else if (desGeneral.texto === "Bajo") {
+                    recomendacionAutomatica = "Presenta dificultades significativas en su proceso de aprendizaje. Es urgente establecer un plan de mejora y mayor acompañamiento familiar en casa.";
+                } else {
+                    recomendacionAutomatica = "El estudiante no cuenta con suficientes calificaciones evaluadas durante este periodo.";
+                }
+                
+                const logoHtml = window.appState.logo 
+                    ? `<img src="${window.appState.logo}" style="width:85px; height:85px; object-fit:contain; border-radius:50%; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">` 
+                    : `<div style="width:85px; height:85px; background:#1d4ed8; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:24px;">CVS</div>`;
 
                 htmlFinal += `
-                    <div style="page-break-after: always; padding: 10px;">
-                        ${window.getHeaderImpresion(`INFORME PEDAGÓGICO - GRADO ${grado}°`, `ESTUDIANTE: ${est.nombre}`)}
-                        <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 13px;">
+                    <div style="page-break-after: always; padding: 20px; font-family: 'Inter', sans-serif;">
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #1e3a8a; padding-bottom:15px; margin-bottom:20px;">
+                            <div style="display:flex; align-items:center; gap:20px;">
+                                ${logoHtml}
+                                <div>
+                                    <h1 style="font-size:22px; font-weight:900; color:#0f172a; margin:0 0 5px 0; letter-spacing:-0.5px;">COLEGIO VIDA SANA REDENSIÓN</h1>
+                                    <p style="font-size:11px; color:#475569; margin:0; line-height:1.4;">
+                                        Código del DANE No. 425290002398 aprobado MEN<br>
+                                        Según Resolución 0007 del 15 de Febrero de 2011<br>
+                                        Finca Chicalá Vereda La Palma - Teléfono 3208466868<br>
+                                        Fusagasugá - Cundinamarca
+                                    </p>
+                                </div>
+                            </div>
+                            <div style="text-align:right; padding-top:10px;">
+                                <h2 style="font-size:18px; font-weight:800; color:#1e3a8a; margin:0 0 4px 0;">INFORME PEDAGÓGICO - GRADO ${grado}°</h2>
+                                <p style="font-size:14px; font-weight:700; color:#334155; margin:0 0 4px 0;">ESTUDIANTE: ${est.nombre}</p>
+                                <p style="font-size:11px; color:#64748b; margin:0;">Año Lectivo: ${new Date().getFullYear()}</p>
+                            </div>
+                        </div>
+
+                        <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                             <thead>
                                 <tr style="background:#1e3a8a; color:white;">
-                                    <th style="border:1px solid #000; padding:10px; text-align:center; width: 18%;">Campos de Formación</th>
-                                    <th style="border:1px solid #000; padding:10px; text-align:center; width: 50%;">Indicadores de Desempeño</th>
-                                    <th style="border:1px solid #000; padding:10px; text-align:center; width: 10%;">Definitiva</th>
-                                    <th style="border:1px solid #000; padding:10px; text-align:center; width: 12%;">Desempeño</th>
-                                    <th style="border:1px solid #000; padding:10px; text-align:center; width: 10%;">Fallas</th>
+                                    <th style="border:1px solid #1e3a8a; padding:12px; text-align:center; width: 18%; font-weight:600;">Campos de Formación</th>
+                                    <th style="border:1px solid #1e3a8a; padding:12px; text-align:center; width: 48%; font-weight:600;">Indicadores de Desempeño</th>
+                                    <th style="border:1px solid #1e3a8a; padding:12px; text-align:center; width: 10%; font-weight:600;">Definitiva</th>
+                                    <th style="border:1px solid #1e3a8a; padding:12px; text-align:center; width: 14%; font-weight:600;">Desempeño</th>
+                                    <th style="border:1px solid #1e3a8a; padding:12px; text-align:center; width: 10%; font-weight:600;">Fallas</th>
                                 </tr>
                             </thead>
                             <tbody>${filasAsignaturas}</tbody>
                             <tfoot>
-                                <tr style="background:#e5e7eb;">
-                                    <td style="border:1px solid #000; padding:12px; text-align:right; font-weight:black;" colspan="2">PROMEDIO GENERAL DEL ESTUDIANTE:</td>
-                                    <td style="border:1px solid #000; padding:12px; text-align:center; font-size: 18px; font-weight:black;">${promedioGeneral}</td>
-                                    <td style="border:1px solid #000; padding:12px; text-align:center; font-weight:bold;">${desGeneral.texto}</td>
-                                    <td style="border:1px solid #000; padding:12px; text-align:center;"></td>
+                                <tr style="background:#f1f5f9;">
+                                    <td style="border:1px solid #94a3b8; padding:14px; text-align:right; font-weight:800; color:#0f172a;" colspan="2">PROMEDIO GENERAL DEL ESTUDIANTE:</td>
+                                    <td style="border:1px solid #94a3b8; padding:14px; text-align:center; font-size: 20px; font-weight:900; color:#1e3a8a;">${promedioGeneral}</td>
+                                    <td style="border:1px solid #94a3b8; padding:14px; text-align:center; font-weight:800; color:#0f172a;">${desGeneral.texto}</td>
+                                    <td style="border:1px solid #94a3b8; padding:14px; text-align:center;"></td>
                                 </tr>
                             </tfoot>
                         </table>
-                        <div style="margin-top: 20px; display: flex; gap: 20px; page-break-inside: avoid;">
-                            <div style="flex: 1; padding: 10px; border: 1px solid #000; font-size: 12px; height: 80px;">
-                                <strong>OBSERVACIONES:</strong><br>
-                                <span style="color:gray; font-style:italic;">(Espacio para anotaciones del director de grupo)</span>
+                        
+                        <!-- Bloque Nuevo: Recomendaciones Automáticas + Firmas/Notas a Mano -->
+                        <div style="margin-top: 25px; display: flex; gap: 20px; page-break-inside: avoid;">
+                            <div style="flex: 1; padding: 15px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 13px; min-height: 100px; background-color: #ffffff;">
+                                <strong style="color:#0f172a; font-size:14px; display:block; margin-bottom:8px;">RECOMENDACIÓN GENERAL DEL PERIODO:</strong>
+                                <div style="color:#334155; line-height:1.5; text-align:justify;">
+                                    <strong>Desempeño ${desGeneral.texto}:</strong> ${recomendacionAutomatica}
+                                </div>
+                                <div style="margin-top:20px; border-top: 1px dashed #cbd5e1; padding-top:15px;">
+                                    <strong style="color:#0f172a; font-size:12px; display:block; margin-bottom:5px;">OBSERVACIONES DEL DIRECTOR DE GRUPO:</strong>
+                                    <span style="color:#9ca3af; font-style:italic; font-size:12px;">(Espacio disponible para anotaciones adicionales del director de grupo o firmas)</span>
+                                </div>
                             </div>
-                            <div style="width: 250px; padding: 10px; border: 1px solid #000; font-size: 11px; text-align: left; background-color: #f9fafb;">
-                                <strong style="display:block; text-align:center; margin-bottom:5px;">ESCALA SIEE</strong>
-                                <div style="display:flex; justify-content:space-between;"><span>SUPERIOR</span> <span>4.6 - 5.0</span></div>
-                                <div style="display:flex; justify-content:space-between;"><span>ALTO</span> <span>4.0 - 4.5</span></div>
-                                <div style="display:flex; justify-content:space-between;"><span>BÁSICO</span> <span>3.0 - 3.9</span></div>
-                                <div style="display:flex; justify-content:space-between;"><span>BAJO</span> <span>1.0 - 2.9</span></div>
+                            <div style="width: 250px; padding: 15px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 11px; text-align: left; background-color: #f8fafc;">
+                                <strong style="display:block; text-align:center; margin-bottom:10px; font-size:12px; color:#0f172a;">ESCALA DE VALORACIÓN SIEE</strong>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;"><span style="font-weight:bold; color:#1d4ed8;">SUPERIOR</span> <span>4.6 - 5.0</span></div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;"><span style="font-weight:bold; color:#15803d;">ALTO</span> <span>4.0 - 4.5</span></div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;"><span style="font-weight:bold; color:#a16207;">BÁSICO</span> <span>3.0 - 3.9</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span style="font-weight:bold; color:#b91c1c;">BAJO</span> <span>1.0 - 2.9</span></div>
                             </div>
                         </div>
-                        <div style="margin-top: 60px; display: flex; justify-content: space-around; text-align: center; font-size: 14px; page-break-inside: avoid;">
-                            <div><div style="border-top: 1px solid black; width: 250px; margin: 0 auto 10px;"></div>Firma Director de Grupo</div>
-                            <div><div style="border-top: 1px solid black; width: 250px; margin: 0 auto 10px;"></div>Firma Coordinación</div>
+
+                        <div style="margin-top: 50px; display: flex; justify-content: space-around; text-align: center; font-size: 14px; font-weight:600; color:#334155; page-break-inside: avoid;">
+                            <div><div style="border-top: 1px solid #0f172a; width: 250px; margin: 0 auto 10px;"></div>Firma Director de Grupo</div>
+                            <div><div style="border-top: 1px solid #0f172a; width: 250px; margin: 0 auto 10px;"></div>Firma Coordinación</div>
                         </div>
                     </div>
                 `;
@@ -1113,7 +1171,7 @@
         window.exportarExcel = () => {
             let ests = window.appState.grados[window.appState.gradoActivo].estudiantes;
             if(ests.length===0) return window.customAlert("No hay estudiantes.");
-            let c = "Estudiante,Compromiso(30%),Participacion(10%),Actitud(20%),Examen(40%),Definitiva,Desempeno,Asistencia%,Observaciones\n";
+            let c = "Estudiante,Compromiso(30%),Participacion(10%),Actitud(20%),Examen(40%),Definitiva,Desempeno,Asistencia%,Bitacora Docente\n";
             ests.forEach(e => {
                 let p = window.calcularPromedios(e.notas);
                 let d = window.getDesempeno(p.def).texto;
