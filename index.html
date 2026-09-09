@@ -29,11 +29,9 @@
         .toast { transition: all 0.3s ease; transform: translateX(100%); opacity: 0; }
         .toast.show { transform: translateX(0); opacity: 1; }
         
-        /* Modales Personalizados */
+        /* Modales Personalizados (Reparados visualmente) */
         .modal-overlay { transition: opacity 0.2s ease-out; }
         .modal-box { transition: transform 0.2s ease-out; }
-        .modal-show .modal-overlay { opacity: 1; pointer-events: auto; }
-        .modal-show .modal-box { transform: scale(1); }
     </style>
 </head>
 <body class="text-gray-800 relative">
@@ -41,10 +39,10 @@
     <div id="toast-container" class="no-print"></div>
 
     <!-- Modal Personalizado (Reemplaza alert, prompt y confirm) -->
-    <div id="custom-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none modal-overlay no-print">
+    <div id="custom-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none modal-overlay no-print transition-opacity duration-200">
         <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div id="modal-box" class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform scale-95 modal-box">
+            <div id="modal-box" class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform scale-95 modal-box transition-transform duration-200">
                 <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2" id="modal-title"><i class="fa-solid fa-bell text-blue-500"></i> Atención</h3>
                 <p class="text-sm text-gray-600 mb-4" id="modal-msg"></p>
                 <input type="text" id="modal-input" class="w-full border border-gray-300 rounded p-2 mb-4 hidden focus:border-blue-500 outline-none text-sm font-medium">
@@ -63,16 +61,24 @@
         <p class="text-gray-500 text-sm mt-2">Sincronizando base de datos institucional</p>
     </div>
 
-    <!-- Pantalla de Login -->
+    <!-- Pantalla de Login (CORREGIDA A CORREO Y CONTRASEÑA) -->
     <div id="login-screen" class="fixed inset-0 z-50 bg-blue-900 flex flex-col items-center justify-center no-print transition-opacity duration-500 hidden">
         <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full">
             <i class="fa-solid fa-shield-halved text-5xl text-blue-600 mb-4"></i>
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">Acceso Docentes</h2>
-            <p class="text-gray-500 text-sm mb-6">Inicia sesión con tu cuenta de Google para acceder al Súper Cuaderno.</p>
-            <button onclick="window.iniciarSesionGoogle()" class="w-full bg-white border border-gray-300 text-gray-700 font-bold py-2 px-4 rounded flex items-center justify-center gap-2 hover:bg-gray-50 transition shadow-sm">
-                <i class="fa-brands fa-google text-red-500"></i>
-                Ingresar con Google
-            </button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Súper Cuaderno</h2>
+            
+            <form onsubmit="window.iniciarSesionCorreo(event)" class="space-y-4">
+                <div>
+                    <input type="email" id="login-email" placeholder="Correo electrónico" class="w-full border border-gray-300 rounded p-3 text-sm focus:border-blue-500 outline-none" required>
+                </div>
+                <div>
+                    <input type="password" id="login-pass" placeholder="Contraseña" class="w-full border border-gray-300 rounded p-3 text-sm focus:border-blue-500 outline-none" required>
+                </div>
+                <button type="submit" id="login-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded shadow hover:bg-blue-500 transition">
+                    Acceder al Panel
+                </button>
+            </form>
+            <p id="login-error" class="text-red-500 text-xs mt-4 hidden font-medium"></p>
         </div>
     </div>
 
@@ -195,8 +201,9 @@
     <div id="vista-impresion" class="print-only print-container"></div>
 
     <script type="module">
+        // Importaciones críticas de Firebase (Nube) - ¡USANDO signInWithEmailAndPassword!
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // TUS LLAVES REALES INYECTADAS
@@ -211,21 +218,17 @@
         
         const appId = 'colegio-siee-app';
         let app, db, auth, user;
-        const provider = new GoogleAuthProvider();
         let isSyncing = false; 
 
-        // Estructura Base de Datos en Memoria (Espejo de la Nube)
         window.masterDB = {};
         window.asignaturaActiva = null;
         window.appState = null;
         window.esPropietario = true;
-        
         window.estudianteActivo = null;
         window.notaEnEdicion = null;
-        
-        // Memoria Inteligente para formularios
         window.lastCriterios = { fecha: null, tema: "", dimension: "Compromiso" };
 
+        // --- SISTEMA DE MODALES REPARADO ---
         const modalEl = document.getElementById('custom-modal');
         const modalBox = document.getElementById('modal-box');
         const modalTitle = document.getElementById('modal-title');
@@ -235,7 +238,11 @@
         const btnConfirm = document.getElementById('modal-btn-confirm');
         
         window.cerrarModal = () => {
-            modalEl.classList.remove('modal-show');
+            // Quitamos clases de visibilidad
+            modalEl.classList.remove('opacity-100', 'pointer-events-auto');
+            modalEl.classList.add('opacity-0', 'pointer-events-none');
+            modalBox.classList.remove('scale-100');
+            modalBox.classList.add('scale-95');
             setTimeout(() => { modalEl.classList.add('hidden'); }, 200);
         };
 
@@ -258,9 +265,15 @@
                 if(onConfirm) onConfirm(val);
             };
 
+            // Quitamos el hidden y forzamos el reflow antes de animar
             modalEl.classList.remove('hidden');
-            void modalEl.offsetWidth; // Forzar reflow
-            modalEl.classList.add('modal-show');
+            void modalEl.offsetWidth; 
+            
+            // Agregamos clases de visibilidad para garantizar que se vea
+            modalEl.classList.remove('opacity-0', 'pointer-events-none');
+            modalEl.classList.add('opacity-100', 'pointer-events-auto');
+            modalBox.classList.remove('scale-95');
+            modalBox.classList.add('scale-100');
         };
 
         window.customAlert = (msg) => abrirModal('<i class="fa-solid fa-circle-info text-blue-500"></i> Información', msg, false, false, null);
@@ -289,16 +302,11 @@
         window.lastCriterios.fecha = window.getFechaHoyInput();
 
         const inicializarFirebase = async () => {
-            if(!firebaseConfig.apiKey || firebaseConfig.apiKey === "TU_API_KEY") {
-                document.getElementById('loading-screen').classList.add('hidden');
-                window.customAlert("Modo de Prueba Local.");
-                return;
-            }
-
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
 
+            // Escuchar inicio de sesión
             onAuthStateChanged(auth, (loggedUser) => {
                 if (loggedUser) {
                     user = loggedUser;
@@ -307,7 +315,7 @@
                     
                     document.getElementById('user-info').classList.remove('hidden');
                     document.getElementById('user-info').classList.add('flex');
-                    document.getElementById('user-avatar').src = user.photoURL || 'https://via.placeholder.com/32';
+                    document.getElementById('user-avatar').src = 'https://ui-avatars.com/api/?name=' + (user.displayName || user.email) + '&background=1d4ed8&color=fff';
                     document.getElementById('user-name').innerText = user.displayName || user.email;
 
                     iniciarNube();
@@ -321,14 +329,28 @@
             });
         };
 
-        window.iniciarSesionGoogle = () => {
-            try {
-                signInWithPopup(auth, provider).catch((error) => {
-                    window.customAlert("Error de Firebase: " + error.message);
+        // Función de inicio de sesión por correo electrónico
+        window.iniciarSesionCorreo = (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            const errorMsg = document.getElementById('login-error');
+            const btn = document.getElementById('login-btn');
+            
+            errorMsg.classList.add('hidden');
+            btn.innerText = "Ingresando...";
+            btn.disabled = true;
+            
+            signInWithEmailAndPassword(auth, email, pass)
+                .then((userCredential) => {
+                    // Acceso concedido (onAuthStateChanged tomará el control)
+                })
+                .catch((error) => {
+                    btn.innerText = "Acceder al Panel";
+                    btn.disabled = false;
+                    errorMsg.innerText = "Error: " + error.message;
+                    errorMsg.classList.remove('hidden');
                 });
-            } catch (error) {
-                window.customAlert("⚠️ ALERTA DE SEGURIDAD: Google ha bloqueado el inicio de sesión...");
-            }
         };
 
         window.cerrarSesion = () => {
@@ -343,7 +365,6 @@
 
             try {
                 const asignaturasRef = collection(db, 'artifacts', appId, 'public', 'data', 'asignaturas');
-                
                 const cloudSnap = await getDocs(asignaturasRef);
                 const localData = localStorage.getItem('cuaderno_ciencias');
                 const hasMigrated = localStorage.getItem('migracion_exitosa_cvs'); 
@@ -354,12 +375,12 @@
                         if (parsed.masterDB) {
                             for(let asig in parsed.masterDB) {
                                 parsed.masterDB[asig].propietario = user.uid;
-                                parsed.masterDB[asig].propietarioNombre = user.displayName;
+                                parsed.masterDB[asig].propietarioNombre = user.email; // Usamos el correo como respaldo
                                 await setDoc(doc(asignaturasRef, asig), parsed.masterDB[asig]);
                             }
                         } else if (parsed.grados) {
                             parsed.propietario = user.uid;
-                            parsed.propietarioNombre = user.displayName;
+                            parsed.propietarioNombre = user.email;
                             await setDoc(doc(asignaturasRef, "Ciencias Naturales"), parsed);
                         }
                         localStorage.setItem('migracion_exitosa_cvs', 'true');
@@ -368,7 +389,7 @@
                 } else if (cloudSnap.empty && !localData) {
                     const defaultState = {
                         gradoActivo: "3", logo: null,
-                        propietario: user.uid, propietarioNombre: user.displayName,
+                        propietario: user.uid, propietarioNombre: user.email,
                         grados: { "1": { dba: "", estudiantes: [] }, "2": { dba: "", estudiantes: [] }, "3": { dba: "", estudiantes: [] }, "4": { dba: "", estudiantes: [] }, "5": { dba: "", estudiantes: [] } }
                     };
                     await setDoc(doc(asignaturasRef, "Ciencias Naturales"), defaultState);
@@ -389,17 +410,6 @@
                         let hizoMigracion = false;
                         for(let asig in window.masterDB) {
                             if(logoGlobal && !window.masterDB[asig].logo) window.masterDB[asig].logo = logoGlobal;
-                            for(let g=1; g<=5; g++) {
-                                if(window.masterDB[asig].grados[g].estudiantes) {
-                                    window.masterDB[asig].grados[g].estudiantes.forEach(est => {
-                                        est.notas.forEach(n => {
-                                            if (n.dimension === 'Saber') { n.dimension = 'Compromiso'; hizoMigracion = true; }
-                                            if (n.dimension === 'Hacer') { n.dimension = 'Participación'; hizoMigracion = true; }
-                                            if (n.dimension === 'Ser') { n.dimension = 'Actitud'; hizoMigracion = true; }
-                                        });
-                                    });
-                                }
-                            }
                         }
 
                         if(!window.asignaturaActiva || !window.masterDB[window.asignaturaActiva]) {
@@ -422,25 +432,7 @@
 
             } catch(e) {
                 console.error("Error Auth", e);
-                document.getElementById('loading-screen').classList.add('hidden');
-                
-                window.customAlert("El entorno de vista previa bloqueó la conexión (por seguridad). Activando Modo Local de Rescate.");
-                const defaultState = { gradoActivo: "3", logo: null, grados: { "1": { dba: "", estudiantes: [] }, "2": { dba: "", estudiantes: [] }, "3": { dba: "", estudiantes: [] }, "4": { dba: "", estudiantes: [] }, "5": { dba: "", estudiantes: [] } } };
-                const localData = localStorage.getItem('cuaderno_ciencias');
-                
-                if (localData) {
-                    try { 
-                        const parsed = JSON.parse(localData);
-                        if (parsed.masterDB) { window.masterDB = parsed.masterDB; }
-                        else if (parsed.grados) { window.masterDB = { "Ciencias Naturales": parsed }; }
-                        else { window.masterDB = { "Ciencias Naturales": defaultState }; }
-                    } catch(err) { window.masterDB = { "Ciencias Naturales": defaultState }; }
-                } else { window.masterDB = { "Ciencias Naturales": defaultState }; }
-                
-                window.asignaturaActiva = Object.keys(window.masterDB)[0];
-                window.appState = window.masterDB[window.asignaturaActiva];
-                window.verificarPropiedad();
-                window.actualizarUIComun();
+                window.customAlert("Error al conectar con la base de datos.");
             }
         };
 
@@ -467,10 +459,7 @@
         };
 
         window.guardarEnNube = async (asigEspecifica = null) => {
-            if(!user || !db) {
-                localStorage.setItem('cuaderno_ciencias', JSON.stringify(window.masterDB));
-                return;
-            }
+            if(!user || !db) return;
             const targetAsig = asigEspecifica || window.asignaturaActiva;
             const asigRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', targetAsig);
             try {
@@ -511,7 +500,7 @@
         };
 
         window.nuevaAsignatura = () => {
-            window.customPrompt("Nombre de la nueva asignatura o periodo (Ej: Ciencias P2):", "", async (nombre) => {
+            window.customPrompt("Nombre de la nueva asignatura (Ej: Ciencias P2):", "", async (nombre) => {
                 nombre = nombre.trim();
                 if(!nombre) return;
                 if(window.masterDB[nombre]) {
@@ -519,7 +508,6 @@
                     return;
                 }
                 
-                // Clonar lista de estudiantes limpia
                 let gradosClonados = {};
                 for (let i = 1; i <= 5; i++) {
                     let estLimpios = window.appState.grados[i].estudiantes.map(e => ({
@@ -540,11 +528,9 @@
                 window.appState = window.masterDB[nombre];
                 window.verificarPropiedad();
                 
-                // Actualizar UI instantáneamente (Corrección aplicada)
                 window.actualizarUIComun();
-                
                 await window.guardarEnNube(nombre);
-                window.showToast("Asignatura creada y listado clonado", "success");
+                window.showToast("Asignatura creada", "success");
             });
         };
 
@@ -559,10 +545,8 @@
                 window.asignaturaActiva = nuevoNombre;
                 window.appState = window.masterDB[nuevoNombre];
                 
-                // Actualizar UI instantáneamente (Corrección aplicada y candado quitado)
                 window.actualizarUIComun();
                 
-                // En Firestore: Creamos la nueva y borramos la vieja
                 await window.guardarEnNube(nuevoNombre);
                 if (db) {
                     const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
@@ -576,16 +560,16 @@
 
         window.eliminarAsignatura = () => {
             let keys = Object.keys(window.masterDB);
-            if(keys.length === 1) return window.customAlert("No puedes eliminar la única asignatura que tienes. Si deseas cambiarle el nombre, usa el botón del lápiz.");
+            if(keys.length === 1) return window.customAlert("No puedes eliminar la única asignatura que tienes. Si deseas cambiar el nombre, usa el lápiz.");
             
-            window.customConfirm(`¿ELIMINAR DEFINITIVAMENTE '${window.asignaturaActiva}' y sus notas?`, async () => {
+            window.customConfirm(`¿ELIMINAR DEFINITIVAMENTE '${window.asignaturaActiva}'?`, async () => {
                 const asigABorrar = window.asignaturaActiva;
                 
-                // Actualización UI inmediata (Corrección aplicada)
                 delete window.masterDB[asigABorrar];
                 window.asignaturaActiva = Object.keys(window.masterDB)[0];
                 window.appState = window.masterDB[window.asignaturaActiva];
                 window.actualizarUIComun();
+                
                 document.getElementById('contenido-dinamico').classList.add('hidden');
                 document.getElementById('mensaje-vacio').classList.remove('hidden');
 
@@ -649,14 +633,12 @@
 
         window.editarNombreEstudiante = () => {
             let est = window.appState.grados[window.appState.gradoActivo].estudiantes.find(e => e.id === window.estudianteActivo);
-            window.customPrompt("Corrige el nombre:", est.nombre, (nuevoNombre) => {
+            window.customPrompt("Corrige el nombre del estudiante:", est.nombre, (nuevoNombre) => {
                 if(nuevoNombre.trim()) {
                     est.nombre = nuevoNombre.trim();
-                    window.guardarEnNube();
-                    
-                    // Refrescar la interfaz instantáneamente (Corrección aplicada)
                     window.renderVistaIndividual();
                     window.renderListaEstudiantes();
+                    window.guardarEnNube();
                     window.showToast("Nombre actualizado", "success");
                 }
             });
@@ -834,7 +816,7 @@
                     </form>
                     <p class="text-[10px] text-blue-500 mt-2 font-medium"><i class="fa-solid fa-brain mr-1"></i> Memoria Inteligente retendrá los datos al cambiar de alumno.</p>
                 </div>
-                ` : `<div class="bg-red-50 p-3 rounded border border-red-200 mb-6 text-red-700 text-sm font-bold text-center"><i class="fa-solid fa-lock mr-2"></i>No puedes agregar o editar notas porque no eres el titular de la asignatura.</div>`}
+                ` : `<div class="bg-red-50 p-3 rounded border border-red-200 mb-6 text-red-700 text-sm font-bold text-center"><i class="fa-solid fa-lock mr-2"></i>No puedes agregar notas porque no eres el titular.</div>`}
 
                 <table class="w-full text-sm border-collapse mb-6">
                     <thead>
@@ -918,7 +900,6 @@
             } else { est.notas.push(nueva); }
             
             window.guardarEnNube();
-            
             window.renderVistaIndividual();
             window.renderListaEstudiantes();
         };
@@ -927,6 +908,7 @@
             let est = window.appState.grados[window.appState.gradoActivo].estudiantes.find(e => e.id === window.estudianteActivo);
             est.notas.splice(idx, 1);
             window.guardarEnNube();
+            window.renderVistaIndividual();
         };
 
         window.showMassiveView = () => {
@@ -1195,7 +1177,6 @@
             reader.onload = async (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    
                     let datosExtraidos = {};
                     if (data.masterDB) {
                         datosExtraidos = data.masterDB; 
@@ -1216,7 +1197,7 @@
                     for(let asig in datosExtraidos) {
                         if(!datosExtraidos[asig].propietario && typeof user !== 'undefined' && user) {
                             datosExtraidos[asig].propietario = user.uid;
-                            datosExtraidos[asig].propietarioNombre = user.displayName;
+                            datosExtraidos[asig].propietarioNombre = user.email;
                         }
                     }
 
@@ -1254,19 +1235,13 @@
                         window.showToast("Datos restaurados localmente", "success");
                     }
                 } catch (err) {
-                    console.error("Error leyendo archivo:", err);
                     window.customAlert("Error al leer el archivo: " + err.message);
                 }
-            };
-            
-            reader.onerror = () => {
-                window.customAlert("Tu navegador bloqueó la lectura del archivo.");
             };
             
             reader.readAsText(file);
         };
 
-        // Arrancar Sistema
         window.onload = inicializarFirebase;
     </script>
 </body>
