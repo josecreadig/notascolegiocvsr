@@ -29,18 +29,15 @@
         .toast { transition: all 0.3s ease; transform: translateX(100%); opacity: 0; }
         .toast.show { transform: translateX(0); opacity: 1; }
         
-        /* Modales Personalizados */
+        /* Modales Personalizados - Transiciones base */
         .modal-overlay { transition: opacity 0.2s ease-out; }
         .modal-box { transition: transform 0.2s ease-out; }
-        .modal-show .modal-overlay { opacity: 1; pointer-events: auto; }
-        .modal-show .modal-box { transform: scale(1); }
     </style>
 </head>
 <body class="text-gray-800 relative">
 
     <div id="toast-container" class="no-print"></div>
 
-    <!-- Modal Personalizado -->
     <div id="custom-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none modal-overlay no-print">
         <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
@@ -56,14 +53,12 @@
         </div>
     </div>
 
-    <!-- Pantalla de Carga -->
     <div id="loading-screen" class="fixed inset-0 z-40 bg-white flex flex-col items-center justify-center no-print transition-opacity duration-500">
         <i class="fa-solid fa-cloud-arrow-down text-5xl text-blue-500 mb-4 animate-bounce" id="load-icon"></i>
         <h2 class="text-xl font-bold text-gray-800" id="load-text">Conectando con la Nube...</h2>
         <p class="text-gray-500 text-sm mt-2" id="load-subtext">Sincronizando base de datos institucional</p>
     </div>
 
-    <!-- Pantalla de Login (Correo Funcional) -->
     <div id="login-screen" class="fixed inset-0 z-50 bg-blue-900 flex flex-col items-center justify-center no-print transition-opacity duration-500 hidden">
         <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full">
             <i class="fa-solid fa-shield-halved text-5xl text-blue-600 mb-4"></i>
@@ -85,7 +80,6 @@
         </div>
     </div>
 
-    <!-- Barra Superior -->
     <nav class="bg-blue-800 text-white shadow-md p-4 no-print flex justify-between items-center relative z-30">
         <div class="flex items-center space-x-3">
             <div onclick="document.getElementById('logo-upload').click()" title="Cambiar escudo institucional" class="w-12 h-12 relative bg-blue-900 rounded-full border-2 border-blue-400 overflow-hidden flex items-center justify-center cursor-pointer group shadow-inner">
@@ -116,14 +110,10 @@
         </div>
     </nav>
 
-    <!-- Contenido Principal -->
     <div class="max-w-7xl mx-auto p-4 flex gap-6 no-print">
         
-        <!-- Panel Izquierdo -->
         <div class="w-1/3 space-y-4">
             <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-                
-                <!-- Gestión de Asignaturas -->
                 <div class="mb-5 p-3 bg-blue-50 rounded border border-blue-200">
                     <label class="block text-xs font-bold text-blue-800 mb-2 uppercase"><i class="fa-solid fa-book text-blue-600 mr-1"></i> Asignatura Actual</label>
                     <div class="flex gap-2">
@@ -174,7 +164,6 @@
                 <ul id="lista-estudiantes" class="space-y-2 max-h-96 overflow-y-auto pr-1"></ul>
             </div>
 
-            <!-- Panel de Seguridad y Respaldo -->
             <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 no-print">
                 <h3 class="font-bold text-sm text-gray-700 mb-3"><i class="fa-solid fa-shield-halved text-blue-500 mr-1"></i> Base de Datos</h3>
                 <div class="flex gap-2">
@@ -189,7 +178,6 @@
             </div>
         </div>
 
-        <!-- Panel Derecho Dinámico -->
         <div id="panel-derecho" class="w-2/3 bg-white p-6 rounded-lg shadow-sm border border-gray-200 print-container relative min-h-screen">
             <div class="text-center text-gray-400 py-32" id="mensaje-vacio">
                 <i class="fa-solid fa-arrow-left text-5xl mb-4 text-gray-300 animate-pulse"></i>
@@ -200,7 +188,6 @@
         </div>
     </div>
 
-    <!-- Vista Exclusiva para Impresión -->
     <div id="vista-impresion" class="print-only print-container"></div>
 
     <script type="module">
@@ -208,7 +195,6 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDocs, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // LLAVES MAESTRAS CORREGIDAS Y DEFINITIVAS
         const firebaseConfig = {
             apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
@@ -221,10 +207,8 @@
         const appId = 'colegio-siee-app';
         let app, db, auth, user;
         let isSyncing = false;
-        
-        window.unsubNube = null; // Guardián de la conexión
+        window.unsubNube = null; 
 
-        // Estructura Base de Datos en Memoria
         window.masterDB = {};
         window.asignaturaActiva = null;
         window.appState = null;
@@ -269,9 +253,12 @@
                 if(onConfirm) onConfirm(val);
             };
 
+            // Quitar el display:none primero
             modalEl.classList.remove('hidden');
+            // Forzar que el navegador repinte la pantalla para que la animación funcione
             void modalEl.offsetWidth;
             
+            // Hacer visible y clicable el modal quitando la opacidad cero
             modalEl.classList.remove('opacity-0', 'pointer-events-none');
             modalEl.classList.add('opacity-100', 'pointer-events-auto');
             modalBox.classList.remove('scale-95');
@@ -351,25 +338,24 @@
         window.cerrarSesion = () => {
             window.customConfirm("¿Seguro que deseas salir del Súper Cuaderno?", async () => {
                 try {
-                    // 1. Apagamos la nube para evitar que al cerrar sesión Firebase grite "permiso denegado"
+                    // Primero desconectamos el escáner de la nube
                     if (window.unsubNube) {
                         window.unsubNube();
                         window.unsubNube = null;
                     }
-                    isSyncing = false; // Reiniciamos la bandera
+                    isSyncing = false; 
                     
-                    // 2. Mostramos la pantalla de salida
                     document.getElementById('load-icon').className = "fa-solid fa-door-open text-5xl text-blue-500 mb-4 animate-pulse";
                     document.getElementById('load-text').innerText = "Cerrando sesión...";
                     document.getElementById('load-subtext').innerText = "Vuelve pronto";
                     document.getElementById('loading-screen').classList.remove('hidden', 'opacity-0');
                     
-                    // 3. Cerramos sesión
+                    // Luego deslogueamos al usuario de Firebase
                     await signOut(auth);
                 } catch(error) {
                     console.log("Error al salir:", error);
                 } finally {
-                    // 4. Recargamos la página incondicionalmente
+                    // Y recargamos incondicionalmente
                     window.location.reload();
                 }
             });
@@ -382,7 +368,6 @@
             try {
                 const asignaturasRef = collection(db, 'artifacts', appId, 'public', 'data', 'asignaturas');
                 
-                // Iniciamos la conexión en tiempo real
                 window.unsubNube = onSnapshot(asignaturasRef, (snapshot) => {
                     const nuevasAsig = {};
                     let logoGlobal = null;
@@ -393,7 +378,6 @@
                     });
                     
                     if(Object.keys(nuevasAsig).length > 0) {
-                        
                         // Guardar la vista local actual para no interrumpir al profesor que está leyendo (Salto Grado Reparado)
                         const vistaAsigAnterior = window.asignaturaActiva;
                         const vistaGradoAnterior = window.appState ? window.appState.gradoActivo : null;
@@ -422,7 +406,6 @@
                         setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
                     }
                 }, (error) => {
-                    // Si hay un error, lo ocultamos para que el "fantasma" no congele la pantalla del profe
                     console.warn("Aviso de Nube silenciado para evitar bloqueos:", error);
                 });
 
@@ -435,7 +418,7 @@
         window.verificarPropiedad = () => {
             if(!user || !window.appState) return;
             
-            // LA LLAVE MAESTRA DE DIOS (Oculta en la UI) permite a este correo saltar las restricciones de UI local
+            // Administrador Supremo (tu correo) siempre tiene acceso total
             const esDuenoOriginal = !window.appState.propietario || window.appState.propietario === user.uid;
             const esAdminSupremo = (user.email && user.email.toLowerCase() === "josecreadig@gmail.com");
             
@@ -466,7 +449,8 @@
             try {
                 await setDoc(asigRef, window.masterDB[targetAsig]);
             } catch(e) {
-                window.showToast("Tu cuenta no tiene permiso para guardar cambios en esta materia.", "warning");
+                // Silenciado visualmente para que si un invitado cambia de grado no salga error
+                console.log("No tienes permiso de guardado en esta materia.");
             }
         };
 
@@ -531,12 +515,11 @@
                 window.appState = window.masterDB[nombre];
                 window.verificarPropiedad();
                 
-                // Intento de guardado en la nube
                 try {
                     await window.guardarEnNube(nombre);
                     window.showToast("Materia creada. Eres el dueño.", "success");
                 } catch(e) {
-                    window.customAlert("Error al subir a la Nube.");
+                    window.customAlert("Error al subir a la Nube. Asegúrate de tener conexión.");
                 }
             });
         };
@@ -560,7 +543,7 @@
                     const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
                     await deleteDoc(viejaRef);
                     window.showToast("Asignatura renombrada", "success");
-                } catch(e) { window.showToast("No tienes permisos.", "warning"); }
+                } catch(e) { window.showToast("No tienes permisos de borrado.", "warning"); }
             });
         };
 
