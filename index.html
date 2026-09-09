@@ -63,22 +63,16 @@
         <p class="text-gray-500 text-sm mt-2">Sincronizando base de datos institucional</p>
     </div>
 
-    <!-- Pantalla de Login (Actualizada a Correo y Contraseña) -->
+    <!-- Pantalla de Login -->
     <div id="login-screen" class="fixed inset-0 z-50 bg-blue-900 flex flex-col items-center justify-center no-print transition-opacity duration-500 hidden">
         <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full">
             <i class="fa-solid fa-shield-halved text-5xl text-blue-600 mb-4"></i>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">Acceso Docentes</h2>
-            <p class="text-gray-500 text-sm mb-6">Ingresa tus credenciales para acceder al Súper Cuaderno.</p>
-            
-            <form onsubmit="window.iniciarSesionCorreo(event)" class="flex flex-col gap-3">
-                <input type="email" id="login-email" placeholder="Correo electrónico" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:border-blue-500" required>
-                <input type="password" id="login-password" placeholder="Contraseña" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:border-blue-500" required>
-                
-                <button type="submit" id="btn-ingresar" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded transition shadow hover:bg-blue-500 mt-2">
-                    Entrar al Sistema
-                </button>
-            </form>
-            <p id="login-error" class="text-red-500 text-xs font-bold hidden mt-3"></p>
+            <p class="text-gray-500 text-sm mb-6">Inicia sesión con tu cuenta de Google para acceder al Súper Cuaderno.</p>
+            <button onclick="window.iniciarSesionGoogle()" class="w-full bg-white border border-gray-300 text-gray-700 font-bold py-2 px-4 rounded flex items-center justify-center gap-2 hover:bg-gray-50 transition shadow-sm">
+                <i class="fa-brands fa-google text-red-500"></i>
+                Ingresar con Google
+            </button>
         </div>
     </div>
 
@@ -201,14 +195,13 @@
     <div id="vista-impresion" class="print-only print-container"></div>
 
     <script type="module">
-        // Importaciones críticas de Firebase (Nube)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // TUS LLAVES REALES INYECTADAS (Corregida la j minúscula)
+        // TUS LLAVES REALES INYECTADAS
         const firebaseConfig = {
-            apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
+            apiKey: "AIzaSyCveuu1973b4jBJpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
             projectId: "cuaderno-del-docente-3f438",
             storageBucket: "cuaderno-del-docente-3f438.firebasestorage.app",
@@ -218,14 +211,19 @@
         
         const appId = 'colegio-siee-app';
         let app, db, auth, user;
-        let isSyncing = false;
+        const provider = new GoogleAuthProvider();
+        let isSyncing = false; 
 
+        // Estructura Base de Datos en Memoria (Espejo de la Nube)
         window.masterDB = {};
         window.asignaturaActiva = null;
         window.appState = null;
         window.esPropietario = true;
+        
         window.estudianteActivo = null;
         window.notaEnEdicion = null;
+        
+        // Memoria Inteligente para formularios
         window.lastCriterios = { fecha: null, tema: "", dimension: "Compromiso" };
 
         const modalEl = document.getElementById('custom-modal');
@@ -244,6 +242,7 @@
         const abrirModal = (titulo, mensaje, showInput, showCancel, onConfirm, defaultValue = "") => {
             modalTitle.innerHTML = titulo;
             modalMsg.innerText = mensaje;
+            
             if(showInput) {
                 modalInput.classList.remove('hidden');
                 modalInput.value = defaultValue;
@@ -260,7 +259,7 @@
             };
 
             modalEl.classList.remove('hidden');
-            void modalEl.offsetWidth;
+            void modalEl.offsetWidth; // Forzar reflow
             modalEl.classList.add('modal-show');
         };
 
@@ -300,59 +299,41 @@
             db = getFirestore(app);
             auth = getAuth(app);
 
-            // Escuchar si el usuario ya inició sesión
             onAuthStateChanged(auth, (loggedUser) => {
                 if (loggedUser) {
                     user = loggedUser;
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('loading-screen').classList.remove('hidden');
+                    
                     document.getElementById('user-info').classList.remove('hidden');
                     document.getElementById('user-info').classList.add('flex');
-                    
-                    // Avatar con iniciales o foto nativa
-                    const avatarUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=0D8ABC&color=fff`;
-                    document.getElementById('user-avatar').src = avatarUrl;
-                    document.getElementById('user-name').innerText = user.displayName || user.email.split('@')[0];
+                    document.getElementById('user-avatar').src = user.photoURL || 'https://via.placeholder.com/32';
+                    document.getElementById('user-name').innerText = user.displayName || user.email;
 
-                    iniciarNube(); 
+                    iniciarNube();
                 } else {
                     document.getElementById('loading-screen').classList.add('hidden');
                     document.getElementById('login-screen').classList.remove('hidden');
+                    
                     document.getElementById('user-info').classList.add('hidden');
                     document.getElementById('user-info').classList.remove('flex');
                 }
             });
         };
 
-        window.iniciarSesionCorreo = (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value.trim();
-            const password = document.getElementById('login-password').value;
-            const btn = document.getElementById('btn-ingresar');
-            const errorMsg = document.getElementById('login-error');
-
-            btn.innerText = "Validando...";
-            btn.disabled = true;
-            errorMsg.classList.add('hidden');
-
-            signInWithEmailAndPassword(auth, email, password)
-                .then(() => {
-                    btn.innerText = "Entrar al Sistema";
-                    btn.disabled = false;
-                })
-                .catch((error) => {
-                    btn.innerText = "Entrar al Sistema";
-                    btn.disabled = false;
-                    errorMsg.innerText = "Error: " + error.message;
-                    errorMsg.classList.remove('hidden');
+        window.iniciarSesionGoogle = () => {
+            try {
+                signInWithPopup(auth, provider).catch((error) => {
+                    window.customAlert("Error de Firebase: " + error.message);
                 });
+            } catch (error) {
+                window.customAlert("⚠️ ALERTA DE SEGURIDAD: Google ha bloqueado el inicio de sesión...");
+            }
         };
 
         window.cerrarSesion = () => {
             window.customConfirm("¿Seguro que deseas salir del Súper Cuaderno?", () => {
-                signOut(auth).then(() => {
-                    window.location.reload(); 
-                });
+                signOut(auth).then(() => { window.location.reload(); });
             });
         };
 
@@ -362,22 +343,23 @@
 
             try {
                 const asignaturasRef = collection(db, 'artifacts', appId, 'public', 'data', 'asignaturas');
+                
                 const cloudSnap = await getDocs(asignaturasRef);
                 const localData = localStorage.getItem('cuaderno_ciencias');
-                const hasMigrated = localStorage.getItem('migracion_exitosa_cvs');
+                const hasMigrated = localStorage.getItem('migracion_exitosa_cvs'); 
 
                 if (localData && !hasMigrated) {
                     try {
                         const parsed = JSON.parse(localData);
                         if (parsed.masterDB) {
                             for(let asig in parsed.masterDB) {
-                                parsed.masterDB[asig].propietario = user.uid; 
-                                parsed.masterDB[asig].propietarioNombre = user.displayName || user.email.split('@')[0];
+                                parsed.masterDB[asig].propietario = user.uid;
+                                parsed.masterDB[asig].propietarioNombre = user.displayName;
                                 await setDoc(doc(asignaturasRef, asig), parsed.masterDB[asig]);
                             }
                         } else if (parsed.grados) {
                             parsed.propietario = user.uid;
-                            parsed.propietarioNombre = user.displayName || user.email.split('@')[0];
+                            parsed.propietarioNombre = user.displayName;
                             await setDoc(doc(asignaturasRef, "Ciencias Naturales"), parsed);
                         }
                         localStorage.setItem('migracion_exitosa_cvs', 'true');
@@ -386,7 +368,7 @@
                 } else if (cloudSnap.empty && !localData) {
                     const defaultState = {
                         gradoActivo: "3", logo: null,
-                        propietario: user.uid, propietarioNombre: user.displayName || user.email.split('@')[0],
+                        propietario: user.uid, propietarioNombre: user.displayName,
                         grados: { "1": { dba: "", estudiantes: [] }, "2": { dba: "", estudiantes: [] }, "3": { dba: "", estudiantes: [] }, "4": { dba: "", estudiantes: [] }, "5": { dba: "", estudiantes: [] } }
                     };
                     await setDoc(doc(asignaturasRef, "Ciencias Naturales"), defaultState);
@@ -403,6 +385,7 @@
                     
                     if(Object.keys(nuevasAsig).length > 0) {
                         window.masterDB = nuevasAsig;
+                        
                         let hizoMigracion = false;
                         for(let asig in window.masterDB) {
                             if(logoGlobal && !window.masterDB[asig].logo) window.masterDB[asig].logo = logoGlobal;
@@ -440,8 +423,8 @@
             } catch(e) {
                 console.error("Error Auth", e);
                 document.getElementById('loading-screen').classList.add('hidden');
-                window.customAlert("El entorno bloqueó la conexión. Activando Modo Local de Rescate.");
                 
+                window.customAlert("El entorno de vista previa bloqueó la conexión (por seguridad). Activando Modo Local de Rescate.");
                 const defaultState = { gradoActivo: "3", logo: null, grados: { "1": { dba: "", estudiantes: [] }, "2": { dba: "", estudiantes: [] }, "3": { dba: "", estudiantes: [] }, "4": { dba: "", estudiantes: [] }, "5": { dba: "", estudiantes: [] } } };
                 const localData = localStorage.getItem('cuaderno_ciencias');
                 
@@ -528,7 +511,7 @@
         };
 
         window.nuevaAsignatura = () => {
-            window.customPrompt("Nombre de la nueva asignatura (Ej: Educación Física):", "", async (nombre) => {
+            window.customPrompt("Nombre de la nueva asignatura o periodo (Ej: Ciencias P2):", "", async (nombre) => {
                 nombre = nombre.trim();
                 if(!nombre) return;
                 if(window.masterDB[nombre]) {
@@ -536,6 +519,7 @@
                     return;
                 }
                 
+                // Clonar lista de estudiantes limpia
                 let gradosClonados = {};
                 for (let i = 1; i <= 5; i++) {
                     let estLimpios = window.appState.grados[i].estudiantes.map(e => ({
@@ -548,22 +532,23 @@
                     gradoActivo: window.appState.gradoActivo,
                     logo: window.appState.logo,
                     propietario: user ? user.uid : "local",
-                    propietarioNombre: user ? (user.displayName || user.email.split('@')[0]) : "Local",
+                    propietarioNombre: user ? (user.displayName || user.email) : "Local",
                     grados: gradosClonados
                 };
                 
                 window.asignaturaActiva = nombre;
                 window.appState = window.masterDB[nombre];
                 window.verificarPropiedad();
+                
+                // Actualizar UI instantáneamente (Corrección aplicada)
+                window.actualizarUIComun();
+                
                 await window.guardarEnNube(nombre);
                 window.showToast("Asignatura creada y listado clonado", "success");
             });
         };
 
         window.renombrarAsignatura = () => {
-            let keys = Object.keys(window.masterDB);
-            if(keys.length === 1) return window.customAlert("Debes tener al menos 2 asignaturas para renombrar.");
-            
             window.customPrompt(`Renombrar '${window.asignaturaActiva}' a:`, window.asignaturaActiva, async (nuevoNombre) => {
                 nuevoNombre = nuevoNombre.trim();
                 if(!nuevoNombre || nuevoNombre === window.asignaturaActiva) return;
@@ -574,21 +559,40 @@
                 window.asignaturaActiva = nuevoNombre;
                 window.appState = window.masterDB[nuevoNombre];
                 
+                // Actualizar UI instantáneamente (Corrección aplicada y candado quitado)
+                window.actualizarUIComun();
+                
+                // En Firestore: Creamos la nueva y borramos la vieja
                 await window.guardarEnNube(nuevoNombre);
-                const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
-                await deleteDoc(viejaRef);
+                if (db) {
+                    const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
+                    await deleteDoc(viejaRef);
+                }
+                delete window.masterDB[viejaAsig];
+                
                 window.showToast("Asignatura renombrada", "success");
             });
         };
 
         window.eliminarAsignatura = () => {
             let keys = Object.keys(window.masterDB);
-            if(keys.length === 1) return window.customAlert("No puedes eliminar la única asignatura que tienes.");
+            if(keys.length === 1) return window.customAlert("No puedes eliminar la única asignatura que tienes. Si deseas cambiarle el nombre, usa el botón del lápiz.");
             
             window.customConfirm(`¿ELIMINAR DEFINITIVAMENTE '${window.asignaturaActiva}' y sus notas?`, async () => {
                 const asigABorrar = window.asignaturaActiva;
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
-                await deleteDoc(docRef);
+                
+                // Actualización UI inmediata (Corrección aplicada)
+                delete window.masterDB[asigABorrar];
+                window.asignaturaActiva = Object.keys(window.masterDB)[0];
+                window.appState = window.masterDB[window.asignaturaActiva];
+                window.actualizarUIComun();
+                document.getElementById('contenido-dinamico').classList.add('hidden');
+                document.getElementById('mensaje-vacio').classList.remove('hidden');
+
+                if (db) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
+                    await deleteDoc(docRef);
+                }
                 window.showToast("Asignatura eliminada", "success");
             });
         };
@@ -649,6 +653,11 @@
                 if(nuevoNombre.trim()) {
                     est.nombre = nuevoNombre.trim();
                     window.guardarEnNube();
+                    
+                    // Refrescar la interfaz instantáneamente (Corrección aplicada)
+                    window.renderVistaIndividual();
+                    window.renderListaEstudiantes();
+                    window.showToast("Nombre actualizado", "success");
                 }
             });
         };
@@ -909,6 +918,7 @@
             } else { est.notas.push(nueva); }
             
             window.guardarEnNube();
+            
             window.renderVistaIndividual();
             window.renderListaEstudiantes();
         };
@@ -1167,14 +1177,6 @@
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
 
-        window.descargarApp = () => {
-            const htmlContent = document.documentElement.outerHTML;
-            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
-            const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
-            link.download = "Sistema_Institucional_Nube.html";
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        };
-
         window.respaldarJSON = () => {
             if(Object.keys(window.masterDB).length === 0) return window.customAlert("No hay datos para respaldar.");
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.masterDB));
@@ -1214,7 +1216,7 @@
                     for(let asig in datosExtraidos) {
                         if(!datosExtraidos[asig].propietario && typeof user !== 'undefined' && user) {
                             datosExtraidos[asig].propietario = user.uid;
-                            datosExtraidos[asig].propietarioNombre = user.displayName || user.email.split('@')[0];
+                            datosExtraidos[asig].propietarioNombre = user.displayName;
                         }
                     }
 
@@ -1264,6 +1266,7 @@
             reader.readAsText(file);
         };
 
+        // Arrancar Sistema
         window.onload = inicializarFirebase;
     </script>
 </body>
