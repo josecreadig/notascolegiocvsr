@@ -10,6 +10,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         
+        /* Motor de Impresión */
         @media print {
             body { background-color: white; }
             .no-print { display: none !important; }
@@ -23,10 +24,12 @@
         }
         .print-only { display: none; }
         
+        /* Notificaciones Toast */
         #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 50; }
         .toast { transition: all 0.3s ease; transform: translateX(100%); opacity: 0; }
         .toast.show { transform: translateX(0); opacity: 1; }
         
+        /* Modales Personalizados */
         .modal-overlay { transition: opacity 0.2s ease-out; }
         .modal-box { transition: transform 0.2s ease-out; }
         .modal-show .modal-overlay { opacity: 1; pointer-events: auto; }
@@ -37,7 +40,7 @@
 
     <div id="toast-container" class="no-print"></div>
 
-    <!-- Modal Personalizado -->
+    <!-- Modal Personalizado (Reemplaza alert, prompt y confirm) -->
     <div id="custom-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none modal-overlay no-print">
         <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
@@ -60,7 +63,7 @@
         <p class="text-gray-500 text-sm mt-2">Sincronizando base de datos institucional</p>
     </div>
 
-    <!-- Pantalla de Login (Correo y Contraseña) -->
+    <!-- Pantalla de Login (Correo y Contraseña Funcional) -->
     <div id="login-screen" class="fixed inset-0 z-50 bg-blue-900 flex flex-col items-center justify-center no-print transition-opacity duration-500 hidden">
         <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full">
             <i class="fa-solid fa-shield-halved text-5xl text-blue-600 mb-4"></i>
@@ -108,7 +111,7 @@
                 <i class="fa-solid fa-cloud text-green-400 mr-2 animate-pulse"></i> Nube Activa
             </span>
             <button onclick="window.cerrarSesion()" class="text-xs bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded shadow transition" title="Cerrar Sesión">
-                <i class="fa-solid fa-right-from-bracket"></i>
+                <i class="fa-solid fa-right-from-bracket"></i> Salir
             </button>
         </div>
     </nav>
@@ -200,12 +203,13 @@
     <!-- Vista Exclusiva para Impresión -->
     <div id="vista-impresion" class="print-only print-container"></div>
 
+    <!-- Lógica Principal -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIGURACIÓN OFICIAL CORREGIDA
+        // TUS LLAVES REALES Y CORREGIDAS (Con número 1 y j minúscula)
         const firebaseConfig = {
             apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
@@ -219,11 +223,11 @@
         let app, db, auth, user;
         let isSyncing = false;
 
-        // Estructura Base de Datos en Memoria
+        // Estructura Base de Datos en Memoria (Espejo de la Nube)
         window.masterDB = {};
         window.asignaturaActiva = null;
         window.appState = null;
-        window.esPropietario = true;
+        window.esPropietario = true; // Por defecto
         
         window.estudianteActivo = null;
         window.notaEnEdicion = null;
@@ -333,11 +337,12 @@
                 .catch((error) => {
                     btn.innerText = "Acceder al Panel";
                     btn.disabled = false;
-                    errorMsg.innerText = "Error: " + error.message;
+                    errorMsg.innerText = "Error: Correo o contraseña incorrectos.";
                     errorMsg.classList.remove('hidden');
                 });
         };
 
+        // Función de cerrar sesión reparada
         window.cerrarSesion = () => {
             window.customConfirm("¿Seguro que deseas salir del Súper Cuaderno?", () => {
                 signOut(auth).then(() => {
@@ -384,6 +389,10 @@
                 }
 
                 onSnapshot(asignaturasRef, (snapshot) => {
+                    // 1. Guardar DÓNDE está mirando el usuario AHORA MISMO para evitar el rebote de grados
+                    const vistaAsigAnterior = window.asignaturaActiva;
+                    const vistaGradoAnterior = window.appState ? window.appState.gradoActivo : null;
+
                     const nuevasAsig = {};
                     let logoGlobal = null;
                     
@@ -393,10 +402,6 @@
                     });
                     
                     if(Object.keys(nuevasAsig).length > 0) {
-                        // SOLUCIÓN AL SALTO DE GRADO: Recordar dónde estaba el usuario antes del snapshot
-                        const vistaAsigAnterior = window.asignaturaActiva;
-                        const vistaGradoAnterior = window.appState ? window.appState.gradoActivo : null;
-
                         window.masterDB = nuevasAsig;
                         
                         let hizoMigracion = false;
@@ -415,11 +420,11 @@
                             }
                         }
 
-                        // Restaurar la vista para no interrumpir al lector
-                        if(!window.asignaturaActiva || !window.masterDB[window.asignaturaActiva]) {
-                            window.asignaturaActiva = Object.keys(window.masterDB)[0];
-                        } else if (vistaAsigAnterior && window.masterDB[vistaAsigAnterior]) {
+                        // 2. Restaurar la vista exacta que tenía el usuario (Solución al error del Grado 3)
+                        if (vistaAsigAnterior && window.masterDB[vistaAsigAnterior]) {
                             window.asignaturaActiva = vistaAsigAnterior; 
+                        } else {
+                            window.asignaturaActiva = Object.keys(window.masterDB)[0];
                         }
                         
                         window.appState = window.masterDB[window.asignaturaActiva];
@@ -456,7 +461,12 @@
 
         window.verificarPropiedad = () => {
             if(!user || !window.appState) return;
-            if(!window.appState.propietario || window.appState.propietario === user.uid) {
+            
+            // Llave Maestra: josecreadig SIEMPRE tiene el control total, además de los verdaderos dueños
+            const esDuenoOriginal = !window.appState.propietario || window.appState.propietario === user.uid;
+            const esAdminSupremo = user.email === "josecreadig@gmail.com";
+            
+            if(esDuenoOriginal || esAdminSupremo) {
                 window.esPropietario = true;
                 document.getElementById('badge-lectura').classList.add('hidden');
                 document.getElementById('btn-renombrar-asig').classList.remove('hidden');
@@ -606,6 +616,7 @@
             } else { navLogo.classList.add('hidden'); }
         };
 
+        // Modificado para evitar guardar en la nube si es invitado
         window.cambiarGrado = () => {
             window.appState.gradoActivo = document.getElementById('grado-selector').value;
             window.estudianteActivo = null;
@@ -614,7 +625,6 @@
             document.getElementById('dba-input').value = window.appState.grados[window.appState.gradoActivo].dba || "";
             window.renderListaEstudiantes();
             
-            // SOLUCIÓN AL SALTO DE GRADO: Solo se guarda si el profe es dueño
             if (window.esPropietario) {
                 window.guardarEnNube();
             }
