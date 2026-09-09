@@ -201,12 +201,14 @@
     <div id="vista-impresion" class="print-only print-container"></div>
 
     <script type="module">
+        // Importaciones críticas de Firebase (Nube)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // TUS LLAVES REALES INYECTADAS (Corregida la j minúscula)
         const firebaseConfig = {
-            apiKey: "AIzaSyCveuu1973b4jBJpYgPEw4FQ8ZqWTZKvjs",
+            apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
             projectId: "cuaderno-del-docente-3f438",
             storageBucket: "cuaderno-del-docente-3f438.firebasestorage.app",
@@ -324,7 +326,7 @@
 
         window.iniciarSesionCorreo = (e) => {
             e.preventDefault();
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
             const btn = document.getElementById('btn-ingresar');
             const errorMsg = document.getElementById('login-error');
@@ -341,7 +343,7 @@
                 .catch((error) => {
                     btn.innerText = "Entrar al Sistema";
                     btn.disabled = false;
-                    errorMsg.innerText = "Credenciales incorrectas o usuario no registrado.";
+                    errorMsg.innerText = "Error: " + error.message;
                     errorMsg.classList.remove('hidden');
                 });
         };
