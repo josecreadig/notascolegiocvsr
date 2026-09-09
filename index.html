@@ -10,7 +10,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         
-        /* Motor de Impresión */
         @media print {
             body { background-color: white; }
             .no-print { display: none !important; }
@@ -24,25 +23,25 @@
         }
         .print-only { display: none; }
         
-        /* Notificaciones Toast */
         #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 50; }
         .toast { transition: all 0.3s ease; transform: translateX(100%); opacity: 0; }
         .toast.show { transform: translateX(0); opacity: 1; }
         
-        /* Modales Personalizados (Reparados visualmente) */
         .modal-overlay { transition: opacity 0.2s ease-out; }
         .modal-box { transition: transform 0.2s ease-out; }
+        .modal-show .modal-overlay { opacity: 1; pointer-events: auto; }
+        .modal-show .modal-box { transform: scale(1); }
     </style>
 </head>
 <body class="text-gray-800 relative">
 
     <div id="toast-container" class="no-print"></div>
 
-    <!-- Modal Personalizado (Reemplaza alert, prompt y confirm) -->
-    <div id="custom-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none modal-overlay no-print transition-opacity duration-200">
+    <!-- Modal Personalizado -->
+    <div id="custom-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none modal-overlay no-print">
         <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div id="modal-box" class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform scale-95 modal-box transition-transform duration-200">
+            <div id="modal-box" class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform scale-95 modal-box">
                 <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2" id="modal-title"><i class="fa-solid fa-bell text-blue-500"></i> Atención</h3>
                 <p class="text-sm text-gray-600 mb-4" id="modal-msg"></p>
                 <input type="text" id="modal-input" class="w-full border border-gray-300 rounded p-2 mb-4 hidden focus:border-blue-500 outline-none text-sm font-medium">
@@ -61,11 +60,12 @@
         <p class="text-gray-500 text-sm mt-2">Sincronizando base de datos institucional</p>
     </div>
 
-    <!-- Pantalla de Login (CORREGIDA A CORREO Y CONTRASEÑA) -->
+    <!-- Pantalla de Login (Correo y Contraseña) -->
     <div id="login-screen" class="fixed inset-0 z-50 bg-blue-900 flex flex-col items-center justify-center no-print transition-opacity duration-500 hidden">
         <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full">
             <i class="fa-solid fa-shield-halved text-5xl text-blue-600 mb-4"></i>
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Súper Cuaderno</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Acceso Docentes</h2>
+            <p class="text-gray-500 text-sm mb-6">Ingresa tus credenciales para acceder al Súper Cuaderno.</p>
             
             <form onsubmit="window.iniciarSesionCorreo(event)" class="space-y-4">
                 <div>
@@ -201,34 +201,36 @@
     <div id="vista-impresion" class="print-only print-container"></div>
 
     <script type="module">
-        // Importaciones críticas de Firebase (Nube) - ¡USANDO signInWithEmailAndPassword!
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // TUS LLAVES REALES INYECTADAS
+        // CONFIGURACIÓN OFICIAL CORREGIDA
         const firebaseConfig = {
-    apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
-    authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
-    projectId: "cuaderno-del-docente-3f438",
-    storageBucket: "cuaderno-del-docente-3f438.firebasestorage.app",
-    messagingSenderId: "156863682869",
-    appId: "1:156863682869:web:b164b4d8209014b496d47c"
-};
+            apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
+            authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
+            projectId: "cuaderno-del-docente-3f438",
+            storageBucket: "cuaderno-del-docente-3f438.firebasestorage.app",
+            messagingSenderId: "156863682869",
+            appId: "1:156863682869:web:b164b4d8209014b496d47c"
+        };
         
         const appId = 'colegio-siee-app';
         let app, db, auth, user;
-        let isSyncing = false; 
+        let isSyncing = false;
 
+        // Estructura Base de Datos en Memoria
         window.masterDB = {};
         window.asignaturaActiva = null;
         window.appState = null;
         window.esPropietario = true;
+        
         window.estudianteActivo = null;
         window.notaEnEdicion = null;
+        
+        // Memoria Inteligente para formularios
         window.lastCriterios = { fecha: null, tema: "", dimension: "Compromiso" };
 
-        // --- SISTEMA DE MODALES REPARADO ---
         const modalEl = document.getElementById('custom-modal');
         const modalBox = document.getElementById('modal-box');
         const modalTitle = document.getElementById('modal-title');
@@ -238,11 +240,7 @@
         const btnConfirm = document.getElementById('modal-btn-confirm');
         
         window.cerrarModal = () => {
-            // Quitamos clases de visibilidad
-            modalEl.classList.remove('opacity-100', 'pointer-events-auto');
-            modalEl.classList.add('opacity-0', 'pointer-events-none');
-            modalBox.classList.remove('scale-100');
-            modalBox.classList.add('scale-95');
+            modalEl.classList.remove('modal-show');
             setTimeout(() => { modalEl.classList.add('hidden'); }, 200);
         };
 
@@ -265,15 +263,9 @@
                 if(onConfirm) onConfirm(val);
             };
 
-            // Quitamos el hidden y forzamos el reflow antes de animar
             modalEl.classList.remove('hidden');
-            void modalEl.offsetWidth; 
-            
-            // Agregamos clases de visibilidad para garantizar que se vea
-            modalEl.classList.remove('opacity-0', 'pointer-events-none');
-            modalEl.classList.add('opacity-100', 'pointer-events-auto');
-            modalBox.classList.remove('scale-95');
-            modalBox.classList.add('scale-100');
+            void modalEl.offsetWidth;
+            modalEl.classList.add('modal-show');
         };
 
         window.customAlert = (msg) => abrirModal('<i class="fa-solid fa-circle-info text-blue-500"></i> Información', msg, false, false, null);
@@ -306,30 +298,26 @@
             db = getFirestore(app);
             auth = getAuth(app);
 
-            // Escuchar inicio de sesión
             onAuthStateChanged(auth, (loggedUser) => {
                 if (loggedUser) {
                     user = loggedUser;
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('loading-screen').classList.remove('hidden');
-                    
                     document.getElementById('user-info').classList.remove('hidden');
                     document.getElementById('user-info').classList.add('flex');
-                    document.getElementById('user-avatar').src = 'https://ui-avatars.com/api/?name=' + (user.displayName || user.email) + '&background=1d4ed8&color=fff';
+                    document.getElementById('user-avatar').src = 'https://ui-avatars.com/api/?name=' + (user.email) + '&background=1d4ed8&color=fff';
                     document.getElementById('user-name').innerText = user.displayName || user.email;
 
                     iniciarNube();
                 } else {
                     document.getElementById('loading-screen').classList.add('hidden');
                     document.getElementById('login-screen').classList.remove('hidden');
-                    
                     document.getElementById('user-info').classList.add('hidden');
                     document.getElementById('user-info').classList.remove('flex');
                 }
             });
         };
 
-        // Función de inicio de sesión por correo electrónico
         window.iniciarSesionCorreo = (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
@@ -338,13 +326,10 @@
             const btn = document.getElementById('login-btn');
             
             errorMsg.classList.add('hidden');
-            btn.innerText = "Ingresando...";
+            btn.innerText = "Verificando...";
             btn.disabled = true;
             
             signInWithEmailAndPassword(auth, email, pass)
-                .then((userCredential) => {
-                    // Acceso concedido (onAuthStateChanged tomará el control)
-                })
                 .catch((error) => {
                     btn.innerText = "Acceder al Panel";
                     btn.disabled = false;
@@ -355,7 +340,9 @@
 
         window.cerrarSesion = () => {
             window.customConfirm("¿Seguro que deseas salir del Súper Cuaderno?", () => {
-                signOut(auth).then(() => { window.location.reload(); });
+                signOut(auth).then(() => {
+                    window.location.reload(); 
+                });
             });
         };
 
@@ -365,6 +352,7 @@
 
             try {
                 const asignaturasRef = collection(db, 'artifacts', appId, 'public', 'data', 'asignaturas');
+                
                 const cloudSnap = await getDocs(asignaturasRef);
                 const localData = localStorage.getItem('cuaderno_ciencias');
                 const hasMigrated = localStorage.getItem('migracion_exitosa_cvs'); 
@@ -374,13 +362,13 @@
                         const parsed = JSON.parse(localData);
                         if (parsed.masterDB) {
                             for(let asig in parsed.masterDB) {
-                                parsed.masterDB[asig].propietario = user.uid;
-                                parsed.masterDB[asig].propietarioNombre = user.email; // Usamos el correo como respaldo
+                                parsed.masterDB[asig].propietario = user.uid; 
+                                parsed.masterDB[asig].propietarioNombre = user.displayName || user.email;
                                 await setDoc(doc(asignaturasRef, asig), parsed.masterDB[asig]);
                             }
                         } else if (parsed.grados) {
                             parsed.propietario = user.uid;
-                            parsed.propietarioNombre = user.email;
+                            parsed.propietarioNombre = user.displayName || user.email;
                             await setDoc(doc(asignaturasRef, "Ciencias Naturales"), parsed);
                         }
                         localStorage.setItem('migracion_exitosa_cvs', 'true');
@@ -389,7 +377,7 @@
                 } else if (cloudSnap.empty && !localData) {
                     const defaultState = {
                         gradoActivo: "3", logo: null,
-                        propietario: user.uid, propietarioNombre: user.email,
+                        propietario: user.uid, propietarioNombre: user.displayName || user.email,
                         grados: { "1": { dba: "", estudiantes: [] }, "2": { dba: "", estudiantes: [] }, "3": { dba: "", estudiantes: [] }, "4": { dba: "", estudiantes: [] }, "5": { dba: "", estudiantes: [] } }
                     };
                     await setDoc(doc(asignaturasRef, "Ciencias Naturales"), defaultState);
@@ -405,21 +393,44 @@
                     });
                     
                     if(Object.keys(nuevasAsig).length > 0) {
+                        // SOLUCIÓN AL SALTO DE GRADO: Recordar dónde estaba el usuario antes del snapshot
+                        const vistaAsigAnterior = window.asignaturaActiva;
+                        const vistaGradoAnterior = window.appState ? window.appState.gradoActivo : null;
+
                         window.masterDB = nuevasAsig;
                         
                         let hizoMigracion = false;
                         for(let asig in window.masterDB) {
                             if(logoGlobal && !window.masterDB[asig].logo) window.masterDB[asig].logo = logoGlobal;
+                            for(let g=1; g<=5; g++) {
+                                if(window.masterDB[asig].grados[g].estudiantes) {
+                                    window.masterDB[asig].grados[g].estudiantes.forEach(est => {
+                                        est.notas.forEach(n => {
+                                            if (n.dimension === 'Saber') { n.dimension = 'Compromiso'; hizoMigracion = true; }
+                                            if (n.dimension === 'Hacer') { n.dimension = 'Participación'; hizoMigracion = true; }
+                                            if (n.dimension === 'Ser') { n.dimension = 'Actitud'; hizoMigracion = true; }
+                                        });
+                                    });
+                                }
+                            }
                         }
 
+                        // Restaurar la vista para no interrumpir al lector
                         if(!window.asignaturaActiva || !window.masterDB[window.asignaturaActiva]) {
                             window.asignaturaActiva = Object.keys(window.masterDB)[0];
+                        } else if (vistaAsigAnterior && window.masterDB[vistaAsigAnterior]) {
+                            window.asignaturaActiva = vistaAsigAnterior; 
                         }
                         
                         window.appState = window.masterDB[window.asignaturaActiva];
+
+                        if (vistaGradoAnterior && window.appState.grados[vistaGradoAnterior]) {
+                            window.appState.gradoActivo = vistaGradoAnterior;
+                        }
+                        
                         window.verificarPropiedad();
                         
-                        if(hizoMigracion) window.guardarEnNube(window.asignaturaActiva); 
+                        if(hizoMigracion) window.guardarEnNube(window.asignaturaActiva);
                         
                         window.actualizarUIComun();
                         document.getElementById('loading-screen').classList.add('opacity-0');
@@ -432,7 +443,14 @@
 
             } catch(e) {
                 console.error("Error Auth", e);
-                window.customAlert("Error al conectar con la base de datos.");
+                document.getElementById('loading-screen').classList.add('hidden');
+                window.customAlert("El entorno bloqueó la conexión. Activando Modo Local.");
+                const defaultState = { gradoActivo: "3", logo: null, grados: { "1": { dba: "", estudiantes: [] }, "2": { dba: "", estudiantes: [] }, "3": { dba: "", estudiantes: [] }, "4": { dba: "", estudiantes: [] }, "5": { dba: "", estudiantes: [] } } };
+                window.masterDB = { "Ciencias Naturales": defaultState };
+                window.asignaturaActiva = "Ciencias Naturales";
+                window.appState = window.masterDB[window.asignaturaActiva];
+                window.verificarPropiedad();
+                window.actualizarUIComun();
             }
         };
 
@@ -500,7 +518,7 @@
         };
 
         window.nuevaAsignatura = () => {
-            window.customPrompt("Nombre de la nueva asignatura (Ej: Ciencias P2):", "", async (nombre) => {
+            window.customPrompt("Nombre de la nueva asignatura (Ej: Educación Física):", "", async (nombre) => {
                 nombre = nombre.trim();
                 if(!nombre) return;
                 if(window.masterDB[nombre]) {
@@ -527,14 +545,15 @@
                 window.asignaturaActiva = nombre;
                 window.appState = window.masterDB[nombre];
                 window.verificarPropiedad();
-                
-                window.actualizarUIComun();
                 await window.guardarEnNube(nombre);
-                window.showToast("Asignatura creada", "success");
+                window.showToast("Asignatura creada y listado clonado", "success");
             });
         };
 
         window.renombrarAsignatura = () => {
+            let keys = Object.keys(window.masterDB);
+            if(keys.length === 1) return window.customAlert("Debes tener al menos 2 asignaturas para renombrar.");
+            
             window.customPrompt(`Renombrar '${window.asignaturaActiva}' a:`, window.asignaturaActiva, async (nuevoNombre) => {
                 nuevoNombre = nuevoNombre.trim();
                 if(!nuevoNombre || nuevoNombre === window.asignaturaActiva) return;
@@ -545,38 +564,21 @@
                 window.asignaturaActiva = nuevoNombre;
                 window.appState = window.masterDB[nuevoNombre];
                 
-                window.actualizarUIComun();
-                
                 await window.guardarEnNube(nuevoNombre);
-                if (db) {
-                    const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
-                    await deleteDoc(viejaRef);
-                }
-                delete window.masterDB[viejaAsig];
-                
+                const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
+                await deleteDoc(viejaRef);
                 window.showToast("Asignatura renombrada", "success");
             });
         };
 
         window.eliminarAsignatura = () => {
             let keys = Object.keys(window.masterDB);
-            if(keys.length === 1) return window.customAlert("No puedes eliminar la única asignatura que tienes. Si deseas cambiar el nombre, usa el lápiz.");
+            if(keys.length === 1) return window.customAlert("No puedes eliminar la única asignatura que tienes.");
             
-            window.customConfirm(`¿ELIMINAR DEFINITIVAMENTE '${window.asignaturaActiva}'?`, async () => {
+            window.customConfirm(`¿ELIMINAR DEFINITIVAMENTE '${window.asignaturaActiva}' y sus notas?`, async () => {
                 const asigABorrar = window.asignaturaActiva;
-                
-                delete window.masterDB[asigABorrar];
-                window.asignaturaActiva = Object.keys(window.masterDB)[0];
-                window.appState = window.masterDB[window.asignaturaActiva];
-                window.actualizarUIComun();
-                
-                document.getElementById('contenido-dinamico').classList.add('hidden');
-                document.getElementById('mensaje-vacio').classList.remove('hidden');
-
-                if (db) {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
-                    await deleteDoc(docRef);
-                }
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
+                await deleteDoc(docRef);
                 window.showToast("Asignatura eliminada", "success");
             });
         };
@@ -611,7 +613,11 @@
             document.getElementById('mensaje-vacio').classList.remove('hidden');
             document.getElementById('dba-input').value = window.appState.grados[window.appState.gradoActivo].dba || "";
             window.renderListaEstudiantes();
-            window.guardarEnNube();
+            
+            // SOLUCIÓN AL SALTO DE GRADO: Solo se guarda si el profe es dueño
+            if (window.esPropietario) {
+                window.guardarEnNube();
+            }
         };
 
         window.guardarDBA = () => {
@@ -633,13 +639,10 @@
 
         window.editarNombreEstudiante = () => {
             let est = window.appState.grados[window.appState.gradoActivo].estudiantes.find(e => e.id === window.estudianteActivo);
-            window.customPrompt("Corrige el nombre del estudiante:", est.nombre, (nuevoNombre) => {
+            window.customPrompt("Corrige el nombre:", est.nombre, (nuevoNombre) => {
                 if(nuevoNombre.trim()) {
                     est.nombre = nuevoNombre.trim();
-                    window.renderVistaIndividual();
-                    window.renderListaEstudiantes();
                     window.guardarEnNube();
-                    window.showToast("Nombre actualizado", "success");
                 }
             });
         };
@@ -816,7 +819,7 @@
                     </form>
                     <p class="text-[10px] text-blue-500 mt-2 font-medium"><i class="fa-solid fa-brain mr-1"></i> Memoria Inteligente retendrá los datos al cambiar de alumno.</p>
                 </div>
-                ` : `<div class="bg-red-50 p-3 rounded border border-red-200 mb-6 text-red-700 text-sm font-bold text-center"><i class="fa-solid fa-lock mr-2"></i>No puedes agregar notas porque no eres el titular.</div>`}
+                ` : `<div class="bg-red-50 p-3 rounded border border-red-200 mb-6 text-red-700 text-sm font-bold text-center"><i class="fa-solid fa-lock mr-2"></i>No puedes agregar o editar notas porque no eres el titular de la asignatura.</div>`}
 
                 <table class="w-full text-sm border-collapse mb-6">
                     <thead>
@@ -900,6 +903,7 @@
             } else { est.notas.push(nueva); }
             
             window.guardarEnNube();
+            
             window.renderVistaIndividual();
             window.renderListaEstudiantes();
         };
@@ -952,8 +956,8 @@
                         ${[...ests].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e => `
                             <tr class="border-b" data-id="${e.id}">
                                 <td class="p-3 font-medium text-gray-700">${e.nombre}</td>
-                                <td class="p-2"><input type="number" step="0.1" min="1.0" max="5.0" class="m-val border rounded p-2 w-full text-center font-bold outline-none"></td>
-                                <td class="p-2 text-center"><input type="checkbox" class="m-asis w-5 h-5 accent-blue-600" checked></td>
+                                <td class="p-2"><input type="number" step="0.1" min="1.0" max="5.0" class="m-val border rounded p-2 w-full text-center font-bold outline-none" ${!window.esPropietario ? 'disabled' : ''}></td>
+                                <td class="p-2 text-center"><input type="checkbox" class="m-asis w-5 h-5 accent-blue-600" checked ${!window.esPropietario ? 'disabled' : ''}></td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -1177,6 +1181,7 @@
             reader.onload = async (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
+                    
                     let datosExtraidos = {};
                     if (data.masterDB) {
                         datosExtraidos = data.masterDB; 
@@ -1197,7 +1202,7 @@
                     for(let asig in datosExtraidos) {
                         if(!datosExtraidos[asig].propietario && typeof user !== 'undefined' && user) {
                             datosExtraidos[asig].propietario = user.uid;
-                            datosExtraidos[asig].propietarioNombre = user.email;
+                            datosExtraidos[asig].propietarioNombre = user.displayName || user.email;
                         }
                     }
 
@@ -1235,8 +1240,13 @@
                         window.showToast("Datos restaurados localmente", "success");
                     }
                 } catch (err) {
+                    console.error("Error leyendo archivo:", err);
                     window.customAlert("Error al leer el archivo: " + err.message);
                 }
+            };
+            
+            reader.onerror = () => {
+                window.customAlert("Tu navegador bloqueó la lectura del archivo.");
             };
             
             reader.readAsText(file);
