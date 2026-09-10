@@ -155,11 +155,15 @@
                 
                 <div class="mb-5 p-3 bg-blue-50 rounded border border-blue-200">
                     <label class="block text-xs font-bold text-blue-800 mb-2 uppercase"><i class="fa-solid fa-book text-blue-600 mr-1"></i> Asignatura Actual</label>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 mb-2">
                         <select id="asignatura-selector" class="flex-1 border border-blue-300 rounded p-1 text-sm font-bold text-gray-700 bg-white outline-none focus:border-blue-500" onchange="window.cambiarAsignatura()"></select>
                         <button id="btn-crear-asig" onclick="window.nuevaAsignatura()" class="bg-blue-600 text-white px-2.5 py-1 rounded shadow hover:bg-blue-500 transition" title="Crear nueva asignatura"><i class="fa-solid fa-plus"></i></button>
                         <button id="btn-renombrar-asig" onclick="window.renombrarAsignatura()" class="bg-gray-600 text-white px-2.5 py-1 rounded shadow hover:bg-gray-500 transition" title="Renombrar asignatura"><i class="fa-solid fa-pen text-xs"></i></button>
                         <button id="btn-eliminar-asig" onclick="window.eliminarAsignatura()" class="bg-red-500 text-white px-2.5 py-1 rounded shadow hover:bg-red-400 transition" title="Eliminar asignatura"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2 pt-2 border-t border-blue-200">
+                        <span class="text-xs font-bold text-blue-800">Intensidad Horaria (IHS): <span id="ihs-display" class="text-blue-600 text-sm">2</span> hrs</span>
+                        <button id="btn-editar-ihs" onclick="window.editarIHS()" class="text-gray-500 hover:text-blue-600 transition hidden" title="Editar IHS"><i class="fa-solid fa-pen text-xs"></i></button>
                     </div>
                 </div>
 
@@ -233,7 +237,7 @@
             <div class="text-center text-gray-400 py-32" id="mensaje-vacio">
                 <i class="fa-solid fa-arrow-left text-5xl mb-4 text-gray-300 animate-pulse"></i>
                 <p class="text-lg font-bold">Selecciona un estudiante o mira las estadísticas.</p>
-                <p class="text-sm mt-2 font-medium text-blue-500">Versión 2.0.3 - SIEE Profesional</p>
+                <p class="text-sm mt-2 font-medium text-blue-500">Versión 2.0.4 - SIEE Profesional</p>
             </div>
             <div id="contenido-dinamico" class="hidden w-full"></div>
         </div>
@@ -246,7 +250,7 @@
         import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Credenciales oficiales CVS
+        // Credenciales oficiales CVS corregidas
         const firebaseConfig = {
             apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
@@ -373,8 +377,7 @@
                     } else {
                         document.getElementById('user-info').classList.remove('hidden');
                         document.getElementById('user-info').classList.add('flex');
-                        // V2: Mostrar DisplayName si existe, sino el correo.
-                        document.getElementById('user-name').innerText = user.displayName || user.email || "Docente";
+                        document.getElementById('user-name').innerText = user.displayName ? user.displayName.toUpperCase() : (user.email || "Docente");
                     }
                     iniciarNube();
                 } else {
@@ -392,7 +395,7 @@
             window.customPrompt("Ingresa tu Nombre Completo (Este nombre saldrá impreso en los boletines y observadores):", user.displayName || "", (nuevoNombre) => {
                 if(nuevoNombre.trim()) {
                     updateProfile(user, { displayName: nuevoNombre.trim() }).then(() => {
-                        document.getElementById('user-name').innerText = nuevoNombre.trim();
+                        document.getElementById('user-name').innerText = nuevoNombre.trim().toUpperCase();
                         window.showToast("Perfil actualizado correctamente", "success");
                     }).catch(e => {
                         window.customAlert("Error al actualizar el perfil.");
@@ -441,7 +444,7 @@
             signInAnonymously(auth).catch((error) => {
                 document.getElementById('padre-btn').innerText = "Consultar Notas";
                 document.getElementById('padre-btn').disabled = false;
-                document.getElementById('padre-error').innerText = "Hubo un error de conexión con la cuenta de Acudiente. Revisa consola: " + error.code;
+                document.getElementById('padre-error').innerText = "Hubo un error de conexión con la cuenta de Acudiente. Habilita 'Anónimo' en Firebase: " + error.code;
                 document.getElementById('padre-error').classList.remove('hidden');
             });
         };
@@ -471,7 +474,7 @@
                 const asignaturasRef = collection(db, 'artifacts', appId, 'public', 'data', 'asignaturas');
                 
                 window.unsubNube = onSnapshot(asignaturasRef, (snapshot) => {
-                    // ESCUDO DE FOCO (Focus Shield) - Mejorado
+                    // ESCUDO DE FOCO (Focus Shield) - Mejorado contra borrados
                     const activeEl = document.activeElement;
                     const activeId = activeEl ? activeEl.id : null;
                     const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
@@ -496,7 +499,7 @@
                         let asignaturasAMigrar = new Set();
                         
                         if(logoGlobal && !window.masterDB[window.asignaturaActiva]?.logo) { 
-                            if(window.masterDB[window.asignaturaActiva]) window.masterDB[window.asignaturaActiva].logo = logoGlobal; 
+                            if(window.masterDB[window.asignaturaActiva]) { window.masterDB[window.asignaturaActiva].logo = logoGlobal; asigModificada = true; }
                         }
 
                         // Modo Familiar interceptado
@@ -519,6 +522,44 @@
                             return; 
                         }
 
+                        for(let asig in window.masterDB) {
+                            for(let g=1; g<=5; g++) {
+                                let grado = window.masterDB[asig].grados[g];
+                                
+                                if(typeof grado.dba === 'string') {
+                                    if(grado.dba === "[object Object]") {
+                                        grado.dba = { "1": "", "2": "", "3": "", "4": "" };
+                                    } else {
+                                        grado.dba = { "1": grado.dba, "2": "", "3": "", "4": "" };
+                                    }
+                                    asigModificada = true;
+                                }
+                                
+                                if(grado.estudiantes) {
+                                    grado.estudiantes.forEach(est => {
+                                        if(!est.pin) { est.pin = Math.floor(1000 + Math.random() * 9000).toString(); asigModificada = true; }
+                                        
+                                        if(typeof est.observacion === 'string') {
+                                            if(est.observacion === "[object Object]") {
+                                                est.observacion = { "1": "", "2": "", "3": "", "4": "" };
+                                            } else {
+                                                est.observacion = { "1": est.observacion, "2": "", "3": "", "4": "" };
+                                            }
+                                            asigModificada = true;
+                                        }
+                                        
+                                        est.notas.forEach(n => {
+                                            if(!n.periodo) {
+                                                n.periodo = 1;
+                                                asigModificada = true;
+                                            }
+                                        });
+                                    });
+                                }
+                            }
+                            if(asigModificada) asignaturasAMigrar.add(asig);
+                        }
+
                         const vistaAsigAnterior = window.asignaturaActiva;
                         const vistaGradoAnterior = window.appState ? window.appState.gradoActivo : null;
 
@@ -535,6 +576,15 @@
                         }
                         
                         window.verificarPropiedad();
+                        
+                        // Guardado seguro de migraciones cortando bucle infinito
+                        if(asignaturasAMigrar.size > 0) {
+                            asignaturasAMigrar.forEach(asig => {
+                                const esDueno = window.masterDB[asig].propietario === user.uid || (user.email && user.email.toLowerCase() === "josecreadig@gmail.com");
+                                if(esDueno) window.guardarEnNube(asig);
+                            });
+                        }
+
                         window.actualizarUIComun();
 
                         // RESTAURADOR DE FOCO
@@ -574,6 +624,7 @@
                 document.getElementById('badge-lectura').classList.add('hidden');
                 document.getElementById('btn-renombrar-asig').classList.remove('hidden');
                 document.getElementById('btn-eliminar-asig').classList.remove('hidden');
+                document.getElementById('btn-editar-ihs').classList.remove('hidden');
                 document.getElementById('btn-vista-masiva').classList.remove('hidden');
                 document.getElementById('form-estudiante').classList.remove('hidden');
                 if (window.periodoActivo !== 'final') document.getElementById('dba-input').disabled = false;
@@ -583,6 +634,7 @@
                 document.getElementById('badge-lectura').innerText = `Solo Lectura (Prof. ${window.appState.propietarioNombre || 'Otro'})`;
                 document.getElementById('btn-renombrar-asig').classList.add('hidden');
                 document.getElementById('btn-eliminar-asig').classList.add('hidden');
+                document.getElementById('btn-editar-ihs').classList.add('hidden');
                 document.getElementById('dba-input').disabled = true;
                 document.getElementById('btn-vista-masiva').classList.add('hidden');
                 document.getElementById('form-estudiante').classList.add('hidden');
@@ -609,6 +661,7 @@
             document.getElementById('header-asignatura').innerText = window.asignaturaActiva;
             document.getElementById('grado-selector').value = window.appState.gradoActivo;
             document.getElementById('periodo-selector').value = window.periodoActivo;
+            document.getElementById('ihs-display').innerText = window.appState.ihs || 2;
             
             const dbaInput = document.getElementById('dba-input');
             if (document.activeElement !== dbaInput) {
@@ -632,7 +685,6 @@
             window.estudianteActivo = null;
             document.getElementById('contenido-dinamico').classList.add('hidden');
             document.getElementById('mensaje-vacio').classList.remove('hidden');
-            // Al cambiar no se guarda en nube, solo se redibuja UI local.
             window.actualizarUIComun();
         };
 
@@ -641,7 +693,6 @@
             window.estudianteActivo = null;
             document.getElementById('contenido-dinamico').classList.add('hidden');
             document.getElementById('mensaje-vacio').classList.remove('hidden');
-            // Cero guardado en nube, cero bucles.
             window.actualizarUIComun();
         };
 
@@ -667,6 +718,21 @@
             }
         };
 
+        window.editarIHS = () => {
+            if (!window.esPropietario) return;
+            let actual = window.appState.ihs || 2;
+            window.customPrompt("Ingresa la Intensidad Horaria Semanal (IHS) para esta asignatura:", actual, (nuevoIHS) => {
+                let num = parseInt(nuevoIHS);
+                if (!isNaN(num) && num > 0) {
+                    window.appState.ihs = num;
+                    document.getElementById('ihs-display').innerText = num;
+                    window.guardarEnNube();
+                } else {
+                    window.customAlert("Por favor ingresa un número válido mayor a 0.");
+                }
+            });
+        };
+
         window.nuevaAsignatura = () => {
             window.customPrompt("Nombre de la nueva asignatura (Ej: Educación Física):", "", async (nombre) => {
                 nombre = nombre.trim();
@@ -686,6 +752,7 @@
                     logo: window.appState.logo,
                     propietario: user.uid,
                     propietarioNombre: user.email,
+                    ihs: 2,
                     grados: gradosClonados
                 };
                 
@@ -709,19 +776,16 @@
                 const viejaAsig = window.asignaturaActiva;
                 
                 try {
-                    // 1. Borrar vieja de NUBE
                     const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
                     await deleteDoc(viejaRef);
                     
-                    // 2. Crear nueva en MEMORIA
                     window.masterDB[nuevoNombre] = JSON.parse(JSON.stringify(window.masterDB[viejaAsig]));
-                    delete window.masterDB[viejaAsig]; // 3. Matar zombie local
+                    delete window.masterDB[viejaAsig]; 
                     
                     window.asignaturaActiva = nuevoNombre;
                     window.appState = window.masterDB[nuevoNombre];
                     window.actualizarUIComun();
                     
-                    // 4. Subir nueva a NUBE
                     await window.guardarEnNube(nuevoNombre);
                     window.showToast("Asignatura renombrada exitosamente", "success");
                 } catch(e) {
@@ -738,11 +802,9 @@
                 const asigABorrar = window.asignaturaActiva;
                 
                 try {
-                    // 1. Matar en la NUBE
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
                     await deleteDoc(docRef);
                     
-                    // 2. Matar zombie en MEMORIA
                     delete window.masterDB[asigABorrar];
                     window.asignaturaActiva = Object.keys(window.masterDB)[0];
                     window.appState = window.masterDB[window.asignaturaActiva];
@@ -997,7 +1059,7 @@
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="window.imprimirObservador('${est.id}')" class="bg-teal-600 hover:bg-teal-500 text-white px-3 py-2 rounded shadow transition text-sm font-bold flex items-center gap-2" title="Imprimir Observador"><i class="fa-solid fa-book-open-reader"></i> Observador</button>
+                        <button onclick="window.imprimirObservador('${est.id}')" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded shadow transition text-sm font-bold flex items-center gap-2" title="Imprimir Observador"><i class="fa-solid fa-book-open-reader"></i> Observador</button>
                         <button onclick="window.imprimirBoletinEstudiante('${est.id}')" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded shadow transition text-sm font-bold flex items-center gap-2" title="Imprimir Boletín Oficial"><i class="fa-solid fa-print"></i> Boletín</button>
                         ${window.esPropietario ? `<button onclick="window.eliminarEstudiante()" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-2 rounded shadow transition text-sm" title="Eliminar Estudiante"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </div>
@@ -1521,6 +1583,8 @@
                             dbaHTML = (val && val !== "[object Object]") ? val : "<span style='color:#9ca3af; font-style:italic;'>Sin indicador registrado.</span>";
                         }
 
+                        let ihsAsig = asigData.ihs || 2;
+                        
                         sumaDefinitivas += parseFloat(promedios.def);
                         totalAsignaturas++;
                         
@@ -1528,14 +1592,13 @@
                         estAsig.notas.forEach(n => { if(!n.asistio) fallasAcumuladas++; });
                         totalFallas += fallasAcumuladas;
 
-                        // Diseño clonado del CVS Oficial (Celdas verticales)
                         filasAsignaturas += `
                             <tr>
                                 <td style="border:1px solid #475569; padding:0; font-weight:bold; background-color:#e0f2fe; color:#0f172a; width:10%; height: 70px;">
                                     <div class="texto-vertical" style="height:100%; width:100%; margin:auto;">${asigNombre.toUpperCase()}</div>
                                 </td>
                                 <td style="border:1px solid #475569; padding:6px; font-size:10px; text-align:justify; color:#1e293b; width:53%;">${dbaHTML}</td>
-                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:5%;">2</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:5%;">${ihsAsig}</td>
                                 <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:6%;">${promedios.p1>0?promedios.p1:''}</td>
                                 <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:6%;">${promedios.p2>0?promedios.p2:''}</td>
                                 <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:6%;">${promedios.p3>0?promedios.p3:''}</td>
@@ -1874,6 +1937,8 @@
                             datosExtraidos[asig].propietario = user.uid;
                             datosExtraidos[asig].propietarioNombre = user.email;
                         }
+                        if(!datosExtraidos[asig].ihs) datosExtraidos[asig].ihs = 2; // IHS por defecto
+
                         for(let g=1; g<=5; g++) {
                             let grado = datosExtraidos[asig].grados[g];
                             if(typeof grado.dba === 'string') {
