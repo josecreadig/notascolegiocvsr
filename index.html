@@ -220,7 +220,7 @@
             <div class="text-center text-gray-400 py-32" id="mensaje-vacio">
                 <i class="fa-solid fa-arrow-left text-5xl mb-4 text-gray-300 animate-pulse"></i>
                 <p class="text-lg font-bold">Selecciona un estudiante o mira las estadísticas.</p>
-                <p class="text-sm mt-2 font-medium text-blue-500">Versión 2.0.1 - 4 Periodos y Portal Familiar</p>
+                <p class="text-sm mt-2 font-medium text-blue-500">Versión 2.0.1 - 4 Periodos, Fotos y Portal Familiar</p>
             </div>
             <div id="contenido-dinamico" class="hidden w-full"></div>
         </div>
@@ -233,6 +233,7 @@
         import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // CREDENCIALES ARREGLADAS
         const firebaseConfig = {
             apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
@@ -387,7 +388,7 @@
                 btn.disabled = false;
                 let mensaje = "Error de conexión.";
                 if(error.code === 'auth/invalid-credential') mensaje = "Correo o contraseña incorrectos.";
-                else if(error.code === 'auth/user-not-found') mensaje = "Este correo no está registrado.";
+                else if(error.code === 'auth/user-not-found') mensaje = "Este correo no está registrado en el colegio.";
                 else if(error.code === 'auth/wrong-password') mensaje = "Contraseña incorrecta.";
                 else mensaje = "No se pudo iniciar sesión. Verifica Firebase: " + error.code;
                 
@@ -457,10 +458,10 @@
                     if(Object.keys(nuevasAsig).length > 0) {
                         window.masterDB = nuevasAsig;
                         
-                        let asignaturasAMigrar = new Set();
+                        // PARCHE V2: Reparación silenciosa EN MEMORIA para evitar bucles infinitos en Firebase
                         for(let asig in window.masterDB) {
-                            let asigModificada = false;
-                            if(logoGlobal && !window.masterDB[asig].logo) { window.masterDB[asig].logo = logoGlobal; asigModificada = true; }
+                            if(logoGlobal && !window.masterDB[asig].logo) { window.masterDB[asig].logo = logoGlobal; }
+                            
                             for(let g=1; g<=5; g++) {
                                 let grado = window.masterDB[asig].grados[g];
                                 
@@ -470,12 +471,11 @@
                                     } else {
                                         grado.dba = { "1": grado.dba, "2": "", "3": "", "4": "" };
                                     }
-                                    asigModificada = true;
                                 }
 
                                 if(grado.estudiantes) {
                                     grado.estudiantes.forEach(est => {
-                                        if(!est.pin) { est.pin = Math.floor(1000 + Math.random() * 9000).toString(); asigModificada = true; }
+                                        if(!est.pin) { est.pin = Math.floor(1000 + Math.random() * 9000).toString(); }
                                         
                                         if(typeof est.observacion === 'string') {
                                             if(est.observacion === "[object Object]") {
@@ -483,19 +483,16 @@
                                             } else {
                                                 est.observacion = { "1": est.observacion, "2": "", "3": "", "4": "" };
                                             }
-                                            asigModificada = true;
                                         }
 
                                         est.notas.forEach(n => {
                                             if(!n.periodo) {
                                                 n.periodo = 1;
-                                                asigModificada = true;
                                             }
                                         });
                                     });
                                 }
                             }
-                            if(asigModificada) asignaturasAMigrar.add(asig);
                         }
 
                         if (user.isAnonymous && window.datosPadre) {
@@ -533,14 +530,6 @@
                         }
                         
                         window.verificarPropiedad();
-                        
-                        if(asignaturasAMigrar.size > 0) {
-                            asignaturasAMigrar.forEach(asig => {
-                                const esDueno = window.masterDB[asig].propietario === user.uid || (user.email && user.email.toLowerCase() === "josecreadig@gmail.com");
-                                if(esDueno) window.guardarEnNube(asig);
-                            });
-                        }
-                        
                         window.actualizarUIComun();
                         document.getElementById('loading-screen').classList.add('opacity-0');
                         setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
@@ -628,7 +617,6 @@
                 document.getElementById('dba-input').value = "Modo de Consolidado Anual (Solo Lectura)";
                 document.getElementById('dba-input').disabled = true;
             }
-            
             window.renderListaEstudiantes();
         };
 
@@ -696,33 +684,37 @@
             });
         };
 
+        // RESOLUCIÓN DE RECREACIÓN DE ZOMBIES - Primero borra en Base de datos, luego en memoria local.
         window.renombrarAsignatura = () => {
-            // Se quita la restricción absurda de no poder renombrar la única materia.
             window.customPrompt(`Renombrar '${window.asignaturaActiva}' a:`, window.asignaturaActiva, async (nuevoNombre) => {
                 nuevoNombre = nuevoNombre.trim();
                 if(!nuevoNombre || nuevoNombre === window.asignaturaActiva) return;
                 if(window.masterDB[nuevoNombre]) return window.customAlert("Ya existe ese nombre.");
                 
                 const viejaAsig = window.asignaturaActiva;
-                window.masterDB[nuevoNombre] = window.masterDB[viejaAsig];
-                
-                // MATA AL ZOMBIE (Lo borra de la pantalla inmediatamente)
-                delete window.masterDB[viejaAsig];
-                
-                window.asignaturaActiva = nuevoNombre;
-                window.appState = window.masterDB[nuevoNombre];
-                
-                window.actualizarUIComun();
                 
                 try {
-                    await window.guardarEnNube(nuevoNombre);
+                    // MATA AL ZOMBIE en la base de datos PRIMERO
                     const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
                     await deleteDoc(viejaRef);
+                    
+                    // Solo si la nube lo permitió, lo clona y elimina localmente
+                    window.masterDB[nuevoNombre] = JSON.parse(JSON.stringify(window.masterDB[viejaAsig]));
+                    delete window.masterDB[viejaAsig];
+                    
+                    window.asignaturaActiva = nuevoNombre;
+                    window.appState = window.masterDB[nuevoNombre];
+                    window.actualizarUIComun();
+                    
+                    await window.guardarEnNube(nuevoNombre);
                     window.showToast("Asignatura renombrada", "success");
-                } catch(e) {}
+                } catch(e) {
+                    window.customAlert("Error de seguridad: Firebase no te permitió modificar esto porque no eres el creador original.");
+                }
             });
         };
 
+        // RESOLUCIÓN DE ZOMBIES - Primero borra en Base de datos
         window.eliminarAsignatura = () => {
             let keys = Object.keys(window.masterDB);
             if(keys.length === 1) return window.customAlert("No puedes eliminar la única asignatura que tienes.");
@@ -730,18 +722,21 @@
             window.customConfirm(`¿ELIMINAR DEFINITIVAMENTE '${window.asignaturaActiva}' y sus notas?`, async () => {
                 const asigABorrar = window.asignaturaActiva;
                 
-                // MATA AL ZOMBIE (Lo borra de la memoria y cambia de vista antes de avisar a la Nube)
-                delete window.masterDB[asigABorrar];
-                window.asignaturaActiva = Object.keys(window.masterDB)[0];
-                window.appState = window.masterDB[window.asignaturaActiva];
-                window.actualizarUIComun();
-
                 try {
+                    // Intenta matar al Zombie en la nube primero
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
                     await deleteDoc(docRef);
-                    window.showToast("Asignatura eliminada", "success");
+                    
+                    // Si Firebase dio permiso, lo eliminamos de la memoria de la pantalla
+                    delete window.masterDB[asigABorrar];
+                    window.asignaturaActiva = Object.keys(window.masterDB)[0];
+                    window.appState = window.masterDB[window.asignaturaActiva];
+                    window.actualizarUIComun();
+                    
+                    window.showToast("Asignatura eliminada con éxito", "success");
                 } catch(e) {
-                    console.log("Error al borrar", e);
+                    window.customAlert("Error de seguridad: Las Reglas de Firebase rechazaron la eliminación porque no eres el creador original de esta materia.");
+                    console.log("Error al borrar (Rechazado por el servidor)", e);
                 }
             });
         };
@@ -788,15 +783,9 @@
                     let height = img.height;
 
                     if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
                     } else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
+                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
                     }
                     canvas.width = width;
                     canvas.height = height;
@@ -1042,6 +1031,7 @@
                             backgroundColor: '#3b82f6', borderRadius: 4
                         }]
                     },
+                    // Animaciones apagadas
                     options: { animation: false, scales: { y: { min: 0, max: 5 } }, plugins: { legend: { display: false } } }
                 });
 
@@ -1164,6 +1154,7 @@
                             backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', pointBackgroundColor: 'rgba(59, 130, 246, 1)', borderWidth: 2
                         }]
                     },
+                    // Animaciones apagadas
                     options: { animation: false, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
                 });
             }
@@ -1358,6 +1349,7 @@
                         backgroundColor: ['#9333ea', '#16a34a', '#ca8a04', '#dc2626', '#9ca3af'], borderRadius: 4
                     }]
                 },
+                // Animaciones apagadas
                 options: { animation: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
             });
         };
@@ -1462,6 +1454,7 @@
                     labels: datosGrafico.materias,
                     datasets: [{ label: 'Nota Final', data: datosGrafico.notas, backgroundColor: 'rgba(16, 185, 129, 0.2)', borderColor: 'rgba(16, 185, 129, 1)', pointBackgroundColor: 'rgba(16, 185, 129, 1)', borderWidth: 2 }]
                 },
+                // Animaciones apagadas
                 options: { animation: false, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } }, maintainAspectRatio: false }
             });
         };
