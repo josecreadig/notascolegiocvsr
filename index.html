@@ -36,7 +36,6 @@
 
     <div id="toast-container" class="no-print"></div>
 
-    <!-- Modal Personalizado (Arreglado - Visible 100%) -->
     <div id="custom-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none modal-overlay no-print">
         <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
@@ -58,7 +57,6 @@
         <p class="text-gray-500 text-sm mt-2" id="load-subtext">Sincronizando base de datos institucional</p>
     </div>
 
-    <!-- PANTALLA DE LOGIN CON CORREO Y PADRES -->
     <div id="login-screen" class="fixed inset-0 z-50 bg-blue-900 flex flex-col items-center justify-center no-print transition-opacity duration-500 hidden">
         <div class="bg-white rounded-xl shadow-2xl overflow-hidden max-w-md w-full">
             
@@ -68,7 +66,6 @@
             </div>
 
             <div class="p-8">
-                <!-- Tab Docente -->
                 <div id="tab-docente" class="text-center">
                     <i class="fa-solid fa-shield-halved text-4xl text-blue-600 mb-3"></i>
                     <h2 class="text-2xl font-bold text-gray-800 mb-2">Acceso Institucional</h2>
@@ -81,7 +78,6 @@
                     <p id="login-error" class="text-red-500 text-xs mt-4 hidden font-medium"></p>
                 </div>
 
-                <!-- Tab Padre -->
                 <div id="tab-padre" class="text-center hidden">
                     <i class="fa-solid fa-house-user text-4xl text-green-600 mb-3"></i>
                     <h2 class="text-2xl font-bold text-gray-800 mb-2">Portal Familiar</h2>
@@ -119,6 +115,7 @@
                 </div>
             </div>
             <input type="file" id="logo-upload" class="hidden" accept="image/*" onchange="window.cargarLogo(event)">
+            <input type="file" id="foto-estudiante-upload" class="hidden" accept="image/*" onchange="window.procesarFotoEstudiante(event)">
             
             <div>
                 <h1 class="text-xl font-bold leading-tight">Colegio Vida Sana Redensión</h1>
@@ -255,8 +252,7 @@
         window.appState = null;
         window.esPropietario = true;
         
-        // V2.0.1: Sistema de Periodos Activos
-        window.periodoActivo = "3"; // <--- INICIAMOS EN EL PERIODO 3
+        window.periodoActivo = "3";
         
         window.estudianteActivo = null;
         window.notaEnEdicion = null;
@@ -393,7 +389,7 @@
                 if(error.code === 'auth/invalid-credential') mensaje = "Correo o contraseña incorrectos.";
                 else if(error.code === 'auth/user-not-found') mensaje = "Este correo no está registrado.";
                 else if(error.code === 'auth/wrong-password') mensaje = "Contraseña incorrecta.";
-                else mensaje = error.message;
+                else mensaje = "No se pudo iniciar sesión. Verifica Firebase: " + error.code;
                 
                 errorMsg.innerText = mensaje;
                 errorMsg.classList.remove('hidden');
@@ -415,7 +411,7 @@
             signInAnonymously(auth).catch((error) => {
                 document.getElementById('padre-btn').innerText = "Consultar Notas";
                 document.getElementById('padre-btn').disabled = false;
-                document.getElementById('padre-error').innerText = "Error de conexión. Verifica que el inicio anónimo esté activo.";
+                document.getElementById('padre-error').innerText = "Error de acceso: Asegúrate de habilitar 'Anónimo' en Firebase (Authentication > Sign-in method).";
                 document.getElementById('padre-error').classList.remove('hidden');
             });
         };
@@ -423,7 +419,6 @@
         window.cerrarSesion = async () => {
             window.customConfirm("¿Seguro que deseas salir de forma segura?", async () => {
                 try {
-                    // 1. Apagar el escáner de la base de datos PRIMERO
                     if (window.unsubNube) {
                         window.unsubNube();
                         window.unsubNube = null;
@@ -434,12 +429,10 @@
                     document.getElementById('load-text').innerText = "Cerrando sesión segura...";
                     document.getElementById('loading-screen').classList.remove('hidden', 'opacity-0');
                     
-                    // 2. Cerrar sesión
                     await signOut(auth);
                 } catch(error) {
                     console.log("Salida forzada:", error);
                 } finally {
-                    // 3. Recargar la página para limpiar todo (garantizado)
                     window.location.reload();
                 }
             });
@@ -471,7 +464,6 @@
                             for(let g=1; g<=5; g++) {
                                 let grado = window.masterDB[asig].grados[g];
                                 
-                                // REPARACIÓN DE [object Object] (Ignora la basura que se guardó por error)
                                 if(typeof grado.dba === 'string') {
                                     if(grado.dba === "[object Object]") {
                                         grado.dba = { "1": "", "2": "", "3": "", "4": "" };
@@ -525,25 +517,23 @@
                             return; 
                         }
 
-                        // Guardar la vista local actual para no interrumpir al profesor que está leyendo
                         const vistaAsigAnterior = window.asignaturaActiva;
                         const vistaGradoAnterior = window.appState ? window.appState.gradoActivo : null;
 
                         if(!window.asignaturaActiva || !window.masterDB[window.asignaturaActiva]) {
                             window.asignaturaActiva = Object.keys(window.masterDB)[0];
                         } else {
-                            window.asignaturaActiva = vistaAsigAnterior; // Mantener la materia que estaba mirando
+                            window.asignaturaActiva = vistaAsigAnterior; 
                         }
                         
                         window.appState = window.masterDB[window.asignaturaActiva];
 
                         if (vistaGradoAnterior && window.appState.grados[vistaGradoAnterior]) {
-                            window.appState.gradoActivo = vistaGradoAnterior; // Mantener el grado que estaba mirando
+                            window.appState.gradoActivo = vistaGradoAnterior; 
                         }
                         
                         window.verificarPropiedad();
                         
-                        // Guarda SOLO las materias que necesitaban reparación (Cero bucles infinitos)
                         if(asignaturasAMigrar.size > 0) {
                             asignaturasAMigrar.forEach(asig => {
                                 const esDueno = window.masterDB[asig].propietario === user.uid || (user.email && user.email.toLowerCase() === "josecreadig@gmail.com");
@@ -651,9 +641,7 @@
             if (window.periodoActivo !== 'final') {
                 document.getElementById('dba-input').value = window.appState.grados[window.appState.gradoActivo].dba[window.periodoActivo] || "";
             }
-            
             window.renderListaEstudiantes();
-            // Eliminado el guardarEnNube() innecesario para evitar saturar Firebase
         };
 
         window.cambiarAsignatura = () => {
@@ -684,7 +672,7 @@
                 let gradosClonados = {};
                 for (let i = 1; i <= 5; i++) {
                     let estLimpios = window.appState.grados[i].estudiantes.map(e => ({
-                        id: e.id, nombre: e.nombre, pin: e.pin, notas: [], observacion: {1:"", 2:"", 3:"", 4:""}
+                        id: e.id, nombre: e.nombre, pin: e.pin, notas: [], observacion: {1:"", 2:"", 3:"", 4:""}, foto: e.foto || null
                     }));
                     gradosClonados[i] = { dba: {1:"", 2:"", 3:"", 4:""}, estudiantes: estLimpios };
                 }
@@ -709,9 +697,7 @@
         };
 
         window.renombrarAsignatura = () => {
-            let keys = Object.keys(window.masterDB);
-            if(keys.length === 1) return window.customAlert("Debes tener al menos 2 asignaturas para renombrar.");
-            
+            // Se quita la restricción absurda de no poder renombrar la única materia.
             window.customPrompt(`Renombrar '${window.asignaturaActiva}' a:`, window.asignaturaActiva, async (nuevoNombre) => {
                 nuevoNombre = nuevoNombre.trim();
                 if(!nuevoNombre || nuevoNombre === window.asignaturaActiva) return;
@@ -719,8 +705,14 @@
                 
                 const viejaAsig = window.asignaturaActiva;
                 window.masterDB[nuevoNombre] = window.masterDB[viejaAsig];
+                
+                // MATA AL ZOMBIE (Lo borra de la pantalla inmediatamente)
+                delete window.masterDB[viejaAsig];
+                
                 window.asignaturaActiva = nuevoNombre;
                 window.appState = window.masterDB[nuevoNombre];
+                
+                window.actualizarUIComun();
                 
                 try {
                     await window.guardarEnNube(nuevoNombre);
@@ -737,11 +729,20 @@
             
             window.customConfirm(`¿ELIMINAR DEFINITIVAMENTE '${window.asignaturaActiva}' y sus notas?`, async () => {
                 const asigABorrar = window.asignaturaActiva;
+                
+                // MATA AL ZOMBIE (Lo borra de la memoria y cambia de vista antes de avisar a la Nube)
+                delete window.masterDB[asigABorrar];
+                window.asignaturaActiva = Object.keys(window.masterDB)[0];
+                window.appState = window.masterDB[window.asignaturaActiva];
+                window.actualizarUIComun();
+
                 try {
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
                     await deleteDoc(docRef);
                     window.showToast("Asignatura eliminada", "success");
-                } catch(e) {}
+                } catch(e) {
+                    console.log("Error al borrar", e);
+                }
             });
         };
 
@@ -770,12 +771,60 @@
             } else { navLogo.classList.add('hidden'); }
         };
 
+        window.procesarFotoEstudiante = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if(!window.esPropietario) return window.customAlert("Solo el titular de la materia puede cambiar la foto.");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 150;
+                    const MAX_HEIGHT = 150;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7); 
+
+                    let est = window.appState.grados[window.appState.gradoActivo].estudiantes.find(e => e.id === window.estudianteActivo);
+                    if(est) {
+                        est.foto = dataUrl;
+                        window.guardarEnNube();
+                        window.renderVistaIndividual();
+                        window.renderListaEstudiantes();
+                        window.showToast("Foto comprimida y guardada exitosamente", "success");
+                    }
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        };
+
         window.agregarEstudiante = (e) => {
             e.preventDefault();
             const nombre = document.getElementById('nuevo-estudiante').value.trim();
             if (nombre && window.esPropietario) {
                 window.appState.grados[window.appState.gradoActivo].estudiantes.push({
-                    id: Date.now().toString(), nombre: nombre, pin: Math.floor(1000 + Math.random() * 9000).toString(), notas: [], observacion: {1:"", 2:"", 3:"", 4:""}
+                    id: Date.now().toString(), nombre: nombre, pin: Math.floor(1000 + Math.random() * 9000).toString(), notas: [], observacion: {1:"", 2:"", 3:"", 4:""}, foto: null
                 });
                 document.getElementById('nuevo-estudiante').value = '';
                 window.guardarEnNube();
@@ -883,12 +932,17 @@
                 const isBajo = p.def < 3.0 && p.def > 0;
                 const activeClass = window.estudianteActivo === est.id ? 'bg-blue-50 border-blue-400 border-2' : 'bg-gray-50 border-gray-200 hover:bg-gray-100 border';
                 
+                let avatarLi = est.foto ? `<img src="${est.foto}" class="w-8 h-8 rounded-full object-cover inline-block mr-2 border border-gray-300">` : `<i class="fa-solid fa-circle-user text-gray-400 text-2xl mr-2"></i>`;
+
                 ul.innerHTML += `
                     <li class="p-3 rounded cursor-pointer transition ${activeClass}" onclick="window.seleccionarEstudiante('${est.id}')">
                         <div class="flex justify-between items-center">
-                            <div>
-                                <p class="font-medium text-sm text-gray-800">${est.nombre}</p>
-                                <p class="text-xs text-gray-500 font-bold">${window.periodoActivo==='final'?'Nota Anual':'Definitiva'}: <span class="${p.def>0?'text-blue-600':''}">${p.def}</span></p>
+                            <div class="flex items-center">
+                                ${avatarLi}
+                                <div>
+                                    <p class="font-medium text-sm text-gray-800">${est.nombre}</p>
+                                    <p class="text-xs text-gray-500 font-bold">${window.periodoActivo==='final'?'Nota Anual':'Definitiva'}: <span class="${p.def>0?'text-blue-600':''}">${p.def}</span></p>
+                                </div>
                             </div>
                             ${isBajo ? '<span class="w-3 h-3 rounded-full bg-red-500 shadow-sm"></span>' : ''}
                         </div>
@@ -913,18 +967,29 @@
             let p = window.calcularPromedios(est.notas, window.periodoActivo);
             let des = window.getDesempeno(p.def);
 
+            let fotoHtml = est.foto ? `<img src="${est.foto}" class="w-16 h-16 rounded-full object-cover border-2 border-blue-400 shadow-sm">` : `<div class="w-16 h-16 rounded-full bg-blue-100 border-2 border-blue-400 flex items-center justify-center text-blue-500 text-2xl font-bold shadow-sm"><i class="fa-solid fa-user"></i></div>`;
+            let clickHandler = window.esPropietario ? `onclick="document.getElementById('foto-estudiante-upload').click()"` : "";
+            let hoverClass = window.esPropietario ? "cursor-pointer group relative" : "";
+            let hoverOverlay = window.esPropietario ? `<div class="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-camera text-white"></i></div>` : "";
+
             let html = `
                 <div class="flex justify-between items-start mb-6 no-print">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-800 inline-flex items-center">
-                            ${est.nombre}
-                            ${window.esPropietario ? `<button onclick="window.editarNombreEstudiante()" class="ml-3 text-blue-500 hover:text-blue-700 text-sm transition"><i class="fa-solid fa-pen"></i></button>` : ''}
-                        </h2>
-                        <p class="text-sm text-gray-500 font-bold">${window.asignaturaActiva} - Grado ${window.appState.gradoActivo}° | <span class="text-blue-600">${window.periodoActivo==='final'?'Acumulado Anual':'Periodo '+window.periodoActivo}</span></p>
-                        <p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-key text-green-500 mr-1"></i>PIN Familias: <b class="text-gray-700 tracking-widest">${est.pin || '0000'}</b> ${window.esPropietario ? `<button onclick="window.cambiarPIN()" class="text-blue-500 ml-2 hover:underline">Cambiar</button>` : ''}</p>
+                    <div class="flex items-center gap-4">
+                        <div class="${hoverClass}" ${clickHandler} title="${window.esPropietario ? 'Cambiar foto del estudiante' : ''}">
+                            ${fotoHtml}
+                            ${hoverOverlay}
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 inline-flex items-center">
+                                ${est.nombre}
+                                ${window.esPropietario ? `<button onclick="window.editarNombreEstudiante()" class="ml-3 text-blue-500 hover:text-blue-700 text-sm transition"><i class="fa-solid fa-pen"></i></button>` : ''}
+                            </h2>
+                            <p class="text-sm text-gray-500 font-bold">${window.asignaturaActiva} - Grado ${window.appState.gradoActivo}° | <span class="text-blue-600">${window.periodoActivo==='final'?'Acumulado Anual':'Periodo '+window.periodoActivo}</span></p>
+                            <p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-key text-green-500 mr-1"></i>PIN Familias: <b class="text-gray-700 tracking-widest">${est.pin || '0000'}</b> ${window.esPropietario ? `<button onclick="window.cambiarPIN()" class="text-blue-500 ml-2 hover:underline">Cambiar</button>` : ''}</p>
+                        </div>
                     </div>
                     <div class="flex gap-2">
-                        ${window.esPropietario ? `<button onclick="window.eliminarEstudiante()" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-2 rounded shadow transition text-sm"><i class="fa-solid fa-trash"></i></button>` : ''}
+                        ${window.esPropietario ? `<button onclick="window.eliminarEstudiante()" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-2 rounded shadow transition text-sm" title="Eliminar Estudiante"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </div>
                 </div>
             `;
@@ -955,8 +1020,8 @@
                                 <p class="text-[9px] font-bold mt-1 ${des.color}">${des.texto}</p>
                             </div>
                         </div>
-                        <div class="w-1/2 bg-white rounded-lg border p-4 shadow-sm">
-                            <canvas id="grafico-estudiante" class="w-full h-full"></canvas>
+                        <div class="w-1/2 bg-white rounded-lg border p-4 shadow-sm flex items-center justify-center">
+                            <canvas id="grafico-estudiante" class="w-full max-h-56"></canvas>
                         </div>
                     </div>
                     <div class="bg-blue-50 p-4 rounded text-blue-800 text-sm font-medium border border-blue-200">
@@ -1010,7 +1075,7 @@
                         </div>
                         
                         <div class="w-1/2 bg-white rounded-lg border p-2 flex items-center justify-center shadow-sm">
-                            <canvas id="grafico-estudiante" class="w-full max-h-48"></canvas>
+                            <canvas id="grafico-estudiante" class="w-full max-h-56"></canvas>
                         </div>
                     </div>
 
@@ -1081,8 +1146,8 @@
                     </table>
 
                     <div class="border-t-2 border-gray-200 pt-4 mt-6">
-                        <h3 class="font-bold text-gray-700 mb-2"><i class="fa-solid fa-book-open text-blue-500 mr-2"></i>Bitácora Privada del Docente (Periodo ${window.periodoActivo})</h3>
-                        <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" placeholder="Anotaciones privadas (no salen en el boletín impreso)." onblur="window.guardarObservacionSilenciosa()" ${!window.esPropietario ? 'disabled' : ''}>${est.observacion[window.periodoActivo] || ''}</textarea>
+                        <h3 class="font-bold text-gray-700 mb-2"><i class="fa-solid fa-book-open text-blue-500 mr-2"></i>Bitácora de Observaciones del Docente</h3>
+                        <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" placeholder="Anotaciones privadas (comportamiento, tareas faltantes, etc). ESTO NO SE IMPRIME EN EL BOLETÍN FINAL." onblur="window.guardarObservacionSilenciosa()" ${!window.esPropietario ? 'disabled' : ''}>${est.observacion[window.periodoActivo] || ''}</textarea>
                     </div>
                 `;
                 document.getElementById('contenido-dinamico').innerHTML = html;
@@ -1316,12 +1381,15 @@
             let sumaDefinitivas = 0;
             let totalAsignaturas = 0;
             let datosGrafico = { materias: [], notas: [] };
+            let fotoFamiliar = null;
 
             for(let asigNombre in window.masterDB) {
                 let asigData = window.masterDB[asigNombre];
                 if(asigData.grados && asigData.grados[grado]) {
                     let estAsig = asigData.grados[grado].estudiantes.find(e => e.nombre.toLowerCase() === nombre.toLowerCase());
                     if(estAsig) {
+                        if(estAsig.foto && !fotoFamiliar) fotoFamiliar = estAsig.foto;
+
                         let promedios = window.calcularPromedios(estAsig.notas, 'final');
                         let des = window.getDesempeno(promedios.def);
                         
@@ -1332,7 +1400,7 @@
                         datosGrafico.notas.push(promedios.def);
 
                         filasAsignaturas += `
-                            <tr class="border-b">
+                            <tr class="border-b hover:bg-gray-50 transition">
                                 <td class="p-3 bg-gray-50 font-bold text-gray-800">${asigNombre}</td>
                                 <td class="p-3 text-center text-gray-600">${promedios.p1>0?promedios.p1:'-'}</td>
                                 <td class="p-3 text-center text-gray-600">${promedios.p2>0?promedios.p2:'-'}</td>
@@ -1349,6 +1417,8 @@
             let promedioGeneral = totalAsignaturas > 0 ? (sumaDefinitivas / totalAsignaturas).toFixed(1) : "0.0";
             let desGeneral = window.getDesempeno(promedioGeneral);
 
+            let avatarPadre = fotoFamiliar ? `<img src="${fotoFamiliar}" class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border-4 border-blue-200 shadow-md">` : `<i class="fa-solid fa-user-graduate text-5xl text-blue-300 mb-3"></i>`;
+
             panel.innerHTML = `
                 <div class="flex justify-between items-center mb-6 pb-4 border-b">
                     <h2 class="text-2xl font-black text-blue-900"><i class="fa-solid fa-graduation-cap text-blue-600 mr-2"></i> Reporte Anual en Línea</h2>
@@ -1357,7 +1427,7 @@
 
                 <div class="flex gap-6 mb-6">
                     <div class="w-1/3 bg-blue-50 border border-blue-200 rounded-xl p-5 shadow-sm text-center">
-                        <i class="fa-solid fa-user-graduate text-5xl text-blue-300 mb-3"></i>
+                        ${avatarPadre}
                         <h3 class="font-bold text-lg text-blue-900">${nombre}</h3>
                         <p class="text-sm text-blue-600 font-medium mb-4">Grado ${grado}°</p>
                         <div class="bg-white p-3 rounded-lg border shadow-sm">
@@ -1367,7 +1437,7 @@
                         </div>
                     </div>
                     <div class="w-2/3 bg-white border rounded-xl p-4 shadow-sm">
-                        <canvas id="padre-grafico" class="w-full max-h-56"></canvas>
+                        <canvas id="padre-grafico" class="w-full max-h-64"></canvas>
                     </div>
                 </div>
 
@@ -1633,6 +1703,7 @@
                                             est.observacion = { "1": est.observacion, "2": "", "3": "", "4": "" };
                                         }
                                         if(!est.pin) est.pin = Math.floor(1000 + Math.random() * 9000).toString();
+                                        if(!est.foto) est.foto = null;
                                         est.notas.forEach(n => {
                                             if(!n.periodo) n.periodo = 1;
                                         });
@@ -1647,9 +1718,6 @@
                     window.asignaturaActiva = Object.keys(window.masterDB)[0];
                     window.appState = window.masterDB[window.asignaturaActiva];
                     window.verificarPropiedad();
-                    
-                    window.periodoActivo = "1"; 
-                    document.getElementById('periodo-selector').value = "1";
                     
                     window.actualizarUIComun();
                     document.getElementById('contenido-dinamico').classList.add('hidden');
@@ -1683,7 +1751,9 @@
                             });
                         }
                     }
-                    if (hizoCambios && window.esPropietario) { await window.guardarEnNube(asig); }
+                    if (hizoCambios && window.esPropietario) {
+                        await window.guardarEnNube(asig);
+                    }
                 }
                 
                 if(hizoCambios) {
