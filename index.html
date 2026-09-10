@@ -38,6 +38,14 @@
         
         .modal-overlay { transition: opacity 0.2s ease-out; }
         .modal-box { transition: transform 0.2s ease-out; }
+
+        .texto-vertical {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            text-align: center;
+            white-space: normal;
+            font-size: 10px;
+        }
     </style>
 </head>
 <body class="text-gray-800 relative">
@@ -67,12 +75,10 @@
 
     <div id="login-screen" class="fixed inset-0 z-50 bg-blue-900 flex flex-col items-center justify-center no-print transition-opacity duration-500 hidden">
         <div class="bg-white rounded-xl shadow-2xl overflow-hidden max-w-md w-full">
-            
             <div class="flex border-b">
                 <button onclick="window.switchTab('tab-docente')" id="btn-tab-docente" class="flex-1 py-4 font-bold text-blue-600 border-b-2 border-blue-600 bg-blue-50 transition"><i class="fa-solid fa-chalkboard-user mr-2"></i>Docente</button>
                 <button onclick="window.switchTab('tab-padre')" id="btn-tab-padre" class="flex-1 py-4 font-bold text-gray-500 border-b-2 border-transparent hover:bg-gray-50 transition"><i class="fa-solid fa-children mr-2"></i>Acudiente</button>
             </div>
-
             <div class="p-8">
                 <div id="tab-docente" class="text-center">
                     <i class="fa-solid fa-shield-halved text-4xl text-blue-600 mb-3"></i>
@@ -85,7 +91,6 @@
                     </form>
                     <p id="login-error" class="text-red-500 text-xs mt-4 hidden font-medium"></p>
                 </div>
-
                 <div id="tab-padre" class="text-center hidden">
                     <i class="fa-solid fa-house-user text-4xl text-green-600 mb-3"></i>
                     <h2 class="text-2xl font-bold text-gray-800 mb-2">Portal Familiar</h2>
@@ -194,7 +199,7 @@
                         <i class="fa-solid fa-file-excel mr-1"></i> Exportar a Excel
                     </button>
                     <button onclick="window.printBoletinGeneral()" class="bg-purple-700 hover:bg-purple-600 text-white p-2 rounded text-sm font-bold transition col-span-2 shadow-sm mt-1">
-                        <i class="fa-solid fa-award mr-1"></i> Generar Boletín Oficial
+                        <i class="fa-solid fa-award mr-1"></i> Generar Boletín General
                     </button>
                 </div>
             </div>
@@ -211,10 +216,13 @@
                 <h3 class="font-bold text-sm text-gray-700 mb-3"><i class="fa-solid fa-shield-halved text-blue-500 mr-1"></i> Base de Datos</h3>
                 <div class="flex gap-2">
                     <button onclick="window.respaldarJSON()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Respaldar (Guardar en PC)">
-                        <i class="fa-solid fa-download"></i> Respaldar
+                        <i class="fa-solid fa-download"></i>
                     </button>
                     <button onclick="document.getElementById('restaurar-upload').value = ''; document.getElementById('restaurar-upload').click()" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Restaurar (Subir backup)">
-                        <i class="fa-solid fa-upload"></i> Restaurar
+                        <i class="fa-solid fa-upload"></i>
+                    </button>
+                    <button onclick="window.moverAPeriodo3()" class="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Mover notas del Periodo 1 al 3">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> A P3
                     </button>
                     <input type="file" id="restaurar-upload" class="hidden" accept=".json" onchange="window.restaurarJSON(event)">
                 </div>
@@ -225,7 +233,7 @@
             <div class="text-center text-gray-400 py-32" id="mensaje-vacio">
                 <i class="fa-solid fa-arrow-left text-5xl mb-4 text-gray-300 animate-pulse"></i>
                 <p class="text-lg font-bold">Selecciona un estudiante o mira las estadísticas.</p>
-                <p class="text-sm mt-2 font-medium text-blue-500">Versión 2.0.2 - Formato CVS Original</p>
+                <p class="text-sm mt-2 font-medium text-blue-500">Versión 2.0.2 - Formato CVS Físico Oficial</p>
             </div>
             <div id="contenido-dinamico" class="hidden w-full"></div>
         </div>
@@ -238,7 +246,7 @@
         import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Credenciales oficiales CVS
+        // Credenciales oficiales CVS arregladas
         const firebaseConfig = {
             apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
@@ -258,7 +266,8 @@
         window.appState = null;
         window.esPropietario = true;
         
-        window.periodoActivo = "3"; // Arranca en periodo 3
+        // Inicia en el periodo 3
+        window.periodoActivo = "3"; 
         
         window.estudianteActivo = null;
         window.notaEnEdicion = null;
@@ -276,7 +285,6 @@
         const btnCancel = document.getElementById('modal-btn-cancel');
         const btnConfirm = document.getElementById('modal-btn-confirm');
         
-        // Modales 100% visibles y desbugeados
         window.cerrarModal = () => {
             modalEl.classList.remove('opacity-100', 'pointer-events-auto');
             modalEl.classList.add('opacity-0', 'pointer-events-none');
@@ -448,6 +456,16 @@
                 const asignaturasRef = collection(db, 'artifacts', appId, 'public', 'data', 'asignaturas');
                 
                 window.unsubNube = onSnapshot(asignaturasRef, (snapshot) => {
+                    // ESCUDO DE FOCO (Evita que la sincronización borre lo que estás escribiendo)
+                    const activeEl = document.activeElement;
+                    const activeId = activeEl ? activeEl.id : null;
+                    const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+                    const activeValue = isInput ? activeEl.value : null;
+                    let selStart = null, selEnd = null;
+                    if (isInput && activeEl.type !== 'checkbox' && activeEl.type !== 'radio' && activeEl.type !== 'number') {
+                        try { selStart = activeEl.selectionStart; selEnd = activeEl.selectionEnd; } catch(e){}
+                    }
+
                     const nuevasAsig = {};
                     let logoGlobal = null;
                     
@@ -458,39 +476,10 @@
                     
                     if(Object.keys(nuevasAsig).length > 0) {
                         window.masterDB = nuevasAsig;
-                        let asignaturasAMigrar = new Set();
                         
-                        // PARCHE V2.0.1: Repara pero NUNCA guarda por su cuenta en bucle
+                        // Aplicación silenciosa del logo a todos
                         for(let asig in window.masterDB) {
-                            let asigModificada = false;
-                            if(logoGlobal && !window.masterDB[asig].logo) { window.masterDB[asig].logo = logoGlobal; asigModificada = true; }
-                            
-                            for(let g=1; g<=5; g++) {
-                                let grado = window.masterDB[asig].grados[g];
-                                
-                                if(typeof grado.dba === 'string') {
-                                    if(grado.dba === "[object Object]") grado.dba = { "1": "", "2": "", "3": "", "4": "" };
-                                    else grado.dba = { "1": grado.dba, "2": "", "3": "", "4": "" };
-                                    asigModificada = true;
-                                }
-
-                                if(grado.estudiantes) {
-                                    grado.estudiantes.forEach(est => {
-                                        if(!est.pin) { est.pin = Math.floor(1000 + Math.random() * 9000).toString(); asigModificada = true; }
-                                        
-                                        if(typeof est.observacion === 'string') {
-                                            if(est.observacion === "[object Object]") est.observacion = { "1": "", "2": "", "3": "", "4": "" };
-                                            else est.observacion = { "1": est.observacion, "2": "", "3": "", "4": "" };
-                                            asigModificada = true;
-                                        }
-
-                                        est.notas.forEach(n => {
-                                            if(!n.periodo) { n.periodo = 1; asigModificada = true; }
-                                        });
-                                    });
-                                }
-                            }
-                            if(asigModificada) asignaturasAMigrar.add(asig);
+                            if(logoGlobal && !window.masterDB[asig].logo) { window.masterDB[asig].logo = logoGlobal; }
                         }
 
                         // Modo Familiar interceptado
@@ -508,7 +497,7 @@
                                 window.renderPortalFamiliar();
                             } else {
                                 window.cerrarSesion();
-                                setTimeout(() => alert("Credenciales incorrectas. Verifica el Nombre y el PIN."), 1000);
+                                setTimeout(() => window.customAlert("Credenciales incorrectas. Verifica el Nombre y el PIN."), 1000);
                             }
                             return; 
                         }
@@ -529,16 +518,24 @@
                         }
                         
                         window.verificarPropiedad();
-                        
-                        // Guardado seguro (solo repara lo estrictamente necesario sin bucles)
-                        if(asignaturasAMigrar.size > 0) {
-                            asignaturasAMigrar.forEach(asig => {
-                                const esDueno = window.masterDB[asig].propietario === user.uid || (user.email && user.email.toLowerCase() === "josecreadig@gmail.com");
-                                if(esDueno) window.guardarEnNube(asig);
-                            });
+                        window.actualizarUIComun();
+
+                        // RESTAURADOR DE FOCO
+                        if (activeId) {
+                            setTimeout(() => {
+                                const elToFocus = document.getElementById(activeId);
+                                if (elToFocus) {
+                                    if (isInput && activeId !== 'asignatura-selector' && activeId !== 'grado-selector' && activeId !== 'periodo-selector') {
+                                        elToFocus.value = activeValue;
+                                    }
+                                    elToFocus.focus();
+                                    if (selStart !== null && selEnd !== null) {
+                                        try { elToFocus.setSelectionRange(selStart, selEnd); } catch(e){}
+                                    }
+                                }
+                            }, 10);
                         }
 
-                        window.actualizarUIComun();
                         document.getElementById('loading-screen').classList.add('opacity-0');
                         setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
                     }
@@ -580,7 +577,7 @@
             const targetAsig = asigEspecifica || window.asignaturaActiva;
             const asigRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', targetAsig);
             try { await setDoc(asigRef, window.masterDB[targetAsig]); } 
-            catch(e) { console.log("Permiso denegado silenciado"); }
+            catch(e) { console.log("Permiso denegado por reglas."); }
         };
 
         window.actualizarUIComun = () => {
@@ -596,10 +593,15 @@
             document.getElementById('grado-selector').value = window.appState.gradoActivo;
             document.getElementById('periodo-selector').value = window.periodoActivo;
             
-            if (window.periodoActivo !== 'final') {
-                document.getElementById('dba-input').value = window.appState.grados[window.appState.gradoActivo].dba[window.periodoActivo] || "";
-            } else {
-                document.getElementById('dba-input').value = "Modo de Consolidado Anual (No se requiere DBA aquí)";
+            const dbaInput = document.getElementById('dba-input');
+            if (document.activeElement !== dbaInput) {
+                if (window.periodoActivo !== 'final') {
+                    // Evita error del objeto anterior
+                    const val = window.appState.grados[window.appState.gradoActivo].dba[window.periodoActivo];
+                    dbaInput.value = typeof val === 'string' ? val : "";
+                } else {
+                    dbaInput.value = "Modo de Consolidado Anual (Solo Lectura)";
+                }
             }
             
             window.aplicarLogoUI();
@@ -614,15 +616,7 @@
             window.estudianteActivo = null;
             document.getElementById('contenido-dinamico').classList.add('hidden');
             document.getElementById('mensaje-vacio').classList.remove('hidden');
-            
-            if (window.periodoActivo !== 'final') {
-                document.getElementById('dba-input').value = window.appState.grados[window.appState.gradoActivo].dba[window.periodoActivo] || "";
-                document.getElementById('dba-input').disabled = !window.esPropietario;
-            } else {
-                document.getElementById('dba-input').value = "Modo de Consolidado Anual (Solo Lectura)";
-                document.getElementById('dba-input').disabled = true;
-            }
-            window.renderListaEstudiantes();
+            window.actualizarUIComun();
         };
 
         window.cambiarGrado = () => {
@@ -630,11 +624,7 @@
             window.estudianteActivo = null;
             document.getElementById('contenido-dinamico').classList.add('hidden');
             document.getElementById('mensaje-vacio').classList.remove('hidden');
-            
-            if (window.periodoActivo !== 'final') {
-                document.getElementById('dba-input').value = window.appState.grados[window.appState.gradoActivo].dba[window.periodoActivo] || "";
-            }
-            window.renderListaEstudiantes();
+            window.actualizarUIComun();
         };
 
         window.cambiarAsignatura = () => {
@@ -698,11 +688,11 @@
                 const viejaAsig = window.asignaturaActiva;
                 
                 try {
-                    // MATA AL ZOMBIE en la nube primero
+                    // Primero matamos al zombie en la nube
                     const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
                     await deleteDoc(viejaRef);
                     
-                    // Solo si lo borró, clona localmente y sube la nueva
+                    // Si funcionó, renombramos local
                     window.masterDB[nuevoNombre] = JSON.parse(JSON.stringify(window.masterDB[viejaAsig]));
                     delete window.masterDB[viejaAsig];
                     
@@ -713,7 +703,7 @@
                     await window.guardarEnNube(nuevoNombre);
                     window.showToast("Asignatura renombrada", "success");
                 } catch(e) {
-                    window.customAlert("Error de seguridad: Firebase no te permitió modificar esto porque no eres el creador original.");
+                    window.customAlert("Error: Firebase no te permitió renombrar esto porque no eres el dueño original.");
                 }
             });
         };
@@ -726,11 +716,11 @@
                 const asigABorrar = window.asignaturaActiva;
                 
                 try {
-                    // Elimina en la nube primero
+                    // Primero matamos al zombie en la nube
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
                     await deleteDoc(docRef);
                     
-                    // Elimina de pantalla
+                    // Solo si lo anterior funcionó, borramos de la pantalla
                     delete window.masterDB[asigABorrar];
                     window.asignaturaActiva = Object.keys(window.masterDB)[0];
                     window.appState = window.masterDB[window.asignaturaActiva];
@@ -738,7 +728,7 @@
                     
                     window.showToast("Asignatura eliminada con éxito", "success");
                 } catch(e) {
-                    window.customAlert("Error de seguridad: Las Reglas de Firebase rechazaron la eliminación porque no eres el creador de esta materia.");
+                    window.customAlert("Error: Firebase rechazó la eliminación porque no eres el creador de esta materia.");
                 }
             });
         };
@@ -961,6 +951,9 @@
             let clickHandler = window.esPropietario ? `onclick="document.getElementById('foto-estudiante-upload').click()"` : "";
             let hoverClass = window.esPropietario ? "cursor-pointer group relative" : "";
             let hoverOverlay = window.esPropietario ? `<div class="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-camera text-white"></i></div>` : "";
+            
+            let obsText = "";
+            if(est.observacion && typeof est.observacion === 'object') obsText = est.observacion[window.periodoActivo] || '';
 
             let html = `
                 <div class="flex justify-between items-start mb-6 no-print">
@@ -979,6 +972,7 @@
                         </div>
                     </div>
                     <div class="flex gap-2">
+                        <button onclick="window.imprimirBoletinEstudiante('${est.id}')" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded shadow transition text-sm font-bold flex items-center gap-2" title="Imprimir Boletín Oficial"><i class="fa-solid fa-print"></i> Imprimir Boletín</button>
                         ${window.esPropietario ? `<button onclick="window.eliminarEstudiante()" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-2 rounded shadow transition text-sm" title="Eliminar Estudiante"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </div>
                 </div>
@@ -1133,7 +1127,7 @@
 
                     <div class="border-t-2 border-gray-200 pt-4 mt-6">
                         <h3 class="font-bold text-gray-700 mb-2"><i class="fa-solid fa-book-open text-blue-500 mr-2"></i>Bitácora de Observaciones del Docente</h3>
-                        <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" placeholder="Anotaciones privadas (comportamiento, tareas faltantes, etc). ESTO NO SE IMPRIME EN EL BOLETÍN FINAL." onblur="window.guardarObservacionSilenciosa()" ${!window.esPropietario ? 'disabled' : ''}>${est.observacion[window.periodoActivo] || ''}</textarea>
+                        <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" placeholder="Anotaciones privadas (comportamiento, tareas faltantes, etc). ESTO NO SE IMPRIME EN EL BOLETÍN FINAL." onblur="window.guardarObservacionSilenciosa()" ${!window.esPropietario ? 'disabled' : ''}>${obsText}</textarea>
                     </div>
                 `;
                 document.getElementById('contenido-dinamico').innerHTML = html;
@@ -1154,6 +1148,7 @@
         window.guardarObservacionSilenciosa = () => {
             if (window.esPropietario && window.periodoActivo !== 'final') {
                 let est = window.appState.grados[window.appState.gradoActivo].estudiantes.find(e => e.id === window.estudianteActivo);
+                if(typeof est.observacion !== 'object') est.observacion = {1:"", 2:"", 3:"", 4:""};
                 est.observacion[window.periodoActivo] = document.getElementById('obs-estudiante').value;
                 window.guardarEnNube();
             }
@@ -1253,8 +1248,8 @@
                         ${[...ests].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(e => `
                             <tr class="border-b" data-id="${e.id}">
                                 <td class="p-3 font-medium text-gray-700">${e.nombre}</td>
-                                <td class="p-2"><input type="number" step="0.1" min="1.0" max="5.0" class="m-val border rounded p-2 w-full text-center font-bold outline-none" ${!window.esPropietario ? 'disabled' : ''}></td>
-                                <td class="p-2 text-center"><input type="checkbox" class="m-asis w-5 h-5 accent-blue-600" checked ${!window.esPropietario ? 'disabled' : ''}></td>
+                                <td class="p-2"><input type="number" id="m-val-${e.id}" step="0.1" min="1.0" max="5.0" class="m-val border rounded p-2 w-full text-center font-bold outline-none" ${!window.esPropietario ? 'disabled' : ''}></td>
+                                <td class="p-2 text-center"><input type="checkbox" id="m-asis-${e.id}" class="m-asis w-5 h-5 accent-blue-600" checked ${!window.esPropietario ? 'disabled' : ''}></td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -1442,6 +1437,19 @@
             });
         };
 
+        window.getHeaderImpresion = (titulo, subtitulo) => {
+            let logoDefault = window.masterDB[Object.keys(window.masterDB)[0]]?.logo || '';
+            const iH = logoDefault ? `<img src="${logoDefault}" style="position:absolute; top:-10px; right:20px; width:65px; height:65px; object-fit:contain;">` : '';
+            return `
+                <div style="text-align: center; margin-bottom: 5px; position: relative; font-family: Arial, sans-serif;">
+                    ${iH}
+                    <h1 style="font-size: 14px; margin: 0; font-weight: bold; color: #0f172a;">COLEGIO VIDA SANA REDENSIÓN</h1>
+                    <p style="font-size: 9px; margin: 2px 0; color: #334155;">Código del DANE No. 425290002398 aprobado MEN<br>Según Resolución 0007 del 15 de febrero de 2011<br>Finca Chicalá Vereda La Palma Teléfono 3202298188<br>Fusagasugá - Cundinamarca</p>
+                    <h2 style="font-size: 12px; margin: 5px 0 0 0; background: #cbd5e1; border: 1px solid #475569; padding: 3px; font-weight:bold;">${titulo}</h2>
+                </div>
+            `;
+        };
+
         window.obtenerHTMLBoletin = (estNombre, estPIN, grado, periodoReporte) => {
             let filasAsignaturas = "";
             let sumaDefinitivas = 0;
@@ -1458,13 +1466,14 @@
                         let dbaHTML = "";
                         if (periodoReporte === 'final') {
                             let dbas = [];
-                            if(asigData.grados[grado].dba["1"]) dbas.push(`<b>P1:</b> ${asigData.grados[grado].dba["1"]}`);
-                            if(asigData.grados[grado].dba["2"]) dbas.push(`<b>P2:</b> ${asigData.grados[grado].dba["2"]}`);
-                            if(asigData.grados[grado].dba["3"]) dbas.push(`<b>P3:</b> ${asigData.grados[grado].dba["3"]}`);
-                            if(asigData.grados[grado].dba["4"]) dbas.push(`<b>P4:</b> ${asigData.grados[grado].dba["4"]}`);
+                            if(asigData.grados[grado].dba["1"] && typeof asigData.grados[grado].dba["1"] === 'string') dbas.push(`<b>P1:</b> ${asigData.grados[grado].dba["1"]}`);
+                            if(asigData.grados[grado].dba["2"] && typeof asigData.grados[grado].dba["2"] === 'string') dbas.push(`<b>P2:</b> ${asigData.grados[grado].dba["2"]}`);
+                            if(asigData.grados[grado].dba["3"] && typeof asigData.grados[grado].dba["3"] === 'string') dbas.push(`<b>P3:</b> ${asigData.grados[grado].dba["3"]}`);
+                            if(asigData.grados[grado].dba["4"] && typeof asigData.grados[grado].dba["4"] === 'string') dbas.push(`<b>P4:</b> ${asigData.grados[grado].dba["4"]}`);
                             dbaHTML = dbas.length > 0 ? dbas.join("<br>") : "<span style='color:#9ca3af; font-style:italic;'>Sin indicadores registrados.</span>";
                         } else {
-                            dbaHTML = asigData.grados[grado].dba[periodoReporte] || "<span style='color:#9ca3af; font-style:italic;'>Sin indicador registrado.</span>";
+                            let val = asigData.grados[grado].dba[periodoReporte];
+                            dbaHTML = (typeof val === 'string' && val.trim() !== '') ? val : "<span style='color:#9ca3af; font-style:italic;'>Sin indicador registrado.</span>";
                         }
 
                         sumaDefinitivas += parseFloat(promedios.def);
@@ -1474,15 +1483,19 @@
                         estAsig.notas.forEach(n => { if(!n.asistio) fallasAcumuladas++; });
                         totalFallas += fallasAcumuladas;
 
+                        // Diseño clonado del CVS Oficial
                         filasAsignaturas += `
                             <tr>
-                                <td style="border:1px solid #475569; padding:6px; font-weight:bold; background-color:#e2e8f0; color:#0f172a; font-size:9px; text-transform:uppercase;">${asigNombre}</td>
-                                <td style="border:1px solid #475569; padding:6px; font-size:10px; text-align:justify; color:#1e293b;">${dbaHTML}</td>
-                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b;">${promedios.p1>0?promedios.p1:''}</td>
-                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b;">${promedios.p2>0?promedios.p2:''}</td>
-                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b;">${promedios.p3>0?promedios.p3:''}</td>
-                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b;">${promedios.p4>0?promedios.p4:''}</td>
-                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-size:13px; font-weight:900; background-color:#f1f5f9; color:#0f172a;">${promedios.def}</td>
+                                <td style="border:1px solid #475569; padding:4px; font-weight:bold; background-color:#e0f2fe; color:#0f172a; width:15%; height: 70px;">
+                                    <div class="texto-vertical" style="height:100%; width:100%; margin:auto;">${asigNombre.toUpperCase()}</div>
+                                </td>
+                                <td style="border:1px solid #475569; padding:6px; font-size:10px; text-align:justify; color:#1e293b; width:48%;">${dbaHTML}</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:7%;">2</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:7%;">${promedios.p1>0?promedios.p1:''}</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:7%;">${promedios.p2>0?promedios.p2:''}</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:7%;">${promedios.p3>0?promedios.p3:''}</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:7%;">${promedios.p4>0?promedios.p4:''}</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-size:12px; font-weight:900; background-color:#f1f5f9; color:#0f172a; width:8%;">${promedios.def}</td>
                             </tr>
                         `;
                     }
@@ -1493,91 +1506,106 @@
             let desGeneral = window.getDesempeno(promedioGeneral);
             
             let reco = "Continúa esforzándote en tu proceso académico.";
-            if (desGeneral.texto === "Superior") reco = "¡Felicitaciones por tu excelente nivel académico! Puedes seguir avanzando con la ayuda de Dios.";
+            if (desGeneral.texto === "Superior") reco = "Felicitaciones por tu avance académico, puedes seguir avanzando con la ayuda de Dios.";
             else if (desGeneral.texto === "Alto") reco = "Buen trabajo. Mantén tu dedicación para alcanzar la excelencia.";
             else if (desGeneral.texto === "Básico") reco = "Has alcanzado los logros básicos. Se recomienda mayor dedicación y repaso en casa.";
             else if (desGeneral.texto === "Bajo") reco = "Presenta dificultades en su proceso. Es necesario un mayor acompañamiento y compromiso familiar.";
 
-            let logoDefault = window.masterDB[Object.keys(window.masterDB)[0]]?.logo || '';
-            let imgLogo = logoDefault ? `<img src="${logoDefault}" style="width:70px; height:70px; object-fit:contain;">` : `<div style="width:70px; height:70px; background:#1e3a8a; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:16px;">CVS</div>`;
-
             return `
-                <div style="page-break-after: always; padding: 10px 20px; font-family: Arial, sans-serif; color: #000; background: white;">
-                    <div style="text-align: center; margin-bottom: 10px; position: relative;">
-                        <div style="position: absolute; left: 0; top: 0;">${imgLogo}</div>
-                        <div style="position: absolute; right: 0; top: 0;">${imgLogo}</div>
-                        <h1 style="font-size: 16px; margin: 0; font-weight: bold; color: #0f172a;">COLEGIO VIDA SANA REDENSIÓN</h1>
-                        <p style="font-size: 10px; margin: 2px 0; color: #334155;">Código del DANE No. 425290002398 aprobado MEN<br>Según Resolución 0007 del 15 de febrero de 2011<br>Finca Chicalá Vereda La Palma Teléfono 3202298188<br>Fusagasugá - Cundinamarca</p>
-                        <h2 style="font-size: 14px; margin: 8px 0 0 0; background: #e2e8f0; border: 1px solid #475569; padding: 4px; font-weight:bold;">INFORME PEDAGÓGICO - ${periodoReporte === 'final' ? 'ACUMULADO ANUAL' : 'PERIODO ' + periodoReporte}</h2>
-                    </div>
+                <div style="page-break-after: always; padding: 10px 15px; font-family: Arial, sans-serif; color: #000; background: white;">
+                    ${window.getHeaderImpresion("INFORME PEDAGÓGICO", "")}
 
-                    <table style="width:100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; border: 1px solid #475569;">
+                    <table style="width:100%; border-collapse: collapse; font-size: 10px; margin-bottom: 8px; border: 1px solid #475569;">
                         <tr>
                             <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:15%;">NOMBRE</td>
-                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:55%;">${estNombre.toUpperCase()}</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:55%; text-transform:uppercase;">${estNombre}</td>
                             <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:15%;">GRADO</td>
                             <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:15%; text-align:center;">${grado}°</td>
                         </tr>
+                        <tr>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:15%;">DOCENTE</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:55%; text-transform:uppercase;">${user && user.email ? user.email.split('@')[0] : 'Docente CVS'}</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:15%;">AÑO LECTIVO</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:15%; text-align:center;">${new Date().getFullYear()}</td>
+                        </tr>
                     </table>
 
-                    <table style="width:100%; border-collapse: collapse; font-size: 10px;">
+                    <table style="width:100%; border-collapse: collapse; font-size: 9px;">
                         <thead>
                             <tr style="background:#0ea5e9; color:white; font-weight:bold; text-align:center;">
-                                <th style="border:1px solid #475569; padding:6px; width:16%;">CAMPOS DE FORMACIÓN</th>
-                                <th style="border:1px solid #475569; padding:6px; width:48%;">INDICADORES DE DESEMPEÑO</th>
-                                <th style="border:1px solid #475569; padding:6px; width:7%;">PERIOD<br>O I</th>
-                                <th style="border:1px solid #475569; padding:6px; width:7%;">PERIOD<br>O II</th>
-                                <th style="border:1px solid #475569; padding:6px; width:7%;">PERIOD<br>O III</th>
-                                <th style="border:1px solid #475569; padding:6px; width:7%;">PERIOD<br>O IV</th>
-                                <th style="border:1px solid #475569; padding:6px; width:8%;">DEFINIT<br>IVA</th>
+                                <th style="border:1px solid #475569; padding:4px; width:15%;">CAMPOS DE FORMACIÓN</th>
+                                <th style="border:1px solid #475569; padding:4px; width:48%;">INDICADORES DE DESEMPEÑO</th>
+                                <th style="border:1px solid #475569; padding:4px; width:7%;">IHS</th>
+                                <th style="border:1px solid #475569; padding:4px; width:7%;">PERIOD<br>O I</th>
+                                <th style="border:1px solid #475569; padding:4px; width:7%;">PERIOD<br>O II</th>
+                                <th style="border:1px solid #475569; padding:4px; width:7%;">PERIOD<br>O III</th>
+                                <th style="border:1px solid #475569; padding:4px; width:7%;">PERIOD<br>O IV</th>
+                                <th style="border:1px solid #475569; padding:4px; width:8%;">DEFINIT<br>IVA</th>
                             </tr>
                         </thead>
                         <tbody>${filasAsignaturas}</tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="2" style="border:1px solid #475569; padding:6px; text-align:right; font-weight:bold; background:#f1f5f9; color:#0f172a;">PROMEDIO GENERAL:</td>
-                                <td colspan="4" style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; background:#f1f5f9;"></td>
-                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-size:14px; font-weight:bold; background:#e2e8f0; color:#0f172a;">${promedioGeneral}</td>
+                                <td colspan="3" style="border:1px solid #475569; padding:4px; text-align:right; font-weight:bold; background:#e2e8f0; color:#0f172a;">PROMEDIO GENERAL:</td>
+                                <td colspan="4" style="border:1px solid #475569; padding:4px; text-align:center; font-weight:bold; background:#f1f5f9;"></td>
+                                <td style="border:1px solid #475569; padding:4px; text-align:center; font-size:13px; font-weight:bold; background:#e2e8f0; color:#0f172a;">${promedioGeneral}</td>
                             </tr>
                         </tfoot>
                     </table>
 
-                    <table style="width:100%; border-collapse: collapse; font-size: 11px; margin-top: 10px;">
+                    <table style="width:100%; border-collapse: collapse; font-size: 10px; margin-top: 8px;">
                         <tr>
-                            <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#e0f2fe; width:20%;">FALLAS</td>
-                            <td style="border:1px solid #475569; padding:6px; text-align:center; width:30%; font-weight:bold;">${totalFallas}</td>
-                            <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#e0f2fe; width:20%;">NIVEL DE DESEMPEÑO</td>
-                            <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; width:30%;">${desGeneral.texto.toUpperCase()}</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:20%;">FALLAS</td>
+                            <td style="border:1px solid #475569; padding:4px; text-align:center; width:30%; font-weight:bold;">${totalFallas}</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:20%;">NIVEL DE DESEMPEÑO</td>
+                            <td style="border:1px solid #475569; padding:4px; text-align:center; font-weight:bold; width:30%;">${desGeneral.texto.toUpperCase()}</td>
                         </tr>
                     </table>
 
-                    <div style="display:flex; margin-top:10px; gap:10px;">
-                        <table style="width:35%; border-collapse: collapse; font-size: 10px; border:1px solid #475569;">
-                            <tr><th colspan="3" style="border:1px solid #475569; background:#f1f5f9; padding:4px;">CRITERIOS DE EVALUACIÓN</th></tr>
-                            <tr><td style="border:1px solid #475569; padding:4px;">4.60 - 5.00</td><td style="border:1px solid #475569; padding:4px;">DESEMPEÑO SUPERIOR</td><td style="border:1px solid #475569; padding:4px; font-weight:bold;">D.S</td></tr>
-                            <tr><td style="border:1px solid #475569; padding:4px; background:#e0f2fe;">4.00 - 4.59</td><td style="border:1px solid #475569; padding:4px; background:#e0f2fe;">DESEMPEÑO ALTO</td><td style="border:1px solid #475569; padding:4px; background:#e0f2fe; font-weight:bold;">D.A</td></tr>
-                            <tr><td style="border:1px solid #475569; padding:4px;">3.00 - 3.99</td><td style="border:1px solid #475569; padding:4px;">DESEMPEÑO BÁSICO</td><td style="border:1px solid #475569; padding:4px; font-weight:bold;">D.BAS</td></tr>
-                            <tr><td style="border:1px solid #475569; padding:4px; background:#fee2e2;">1.00 - 2.99</td><td style="border:1px solid #475569; padding:4px; background:#fee2e2;">DESEMPEÑO BAJO</td><td style="border:1px solid #475569; padding:4px; background:#fee2e2; font-weight:bold;">D.B</td></tr>
+                    <div style="display:flex; margin-top:8px; gap:8px;">
+                        <table style="width:40%; border-collapse: collapse; font-size: 9px; border:1px solid #475569;">
+                            <tr><th colspan="3" style="border:1px solid #475569; background:#f1f5f9; padding:3px;">CRITERIOS DE EVALUACIÓN</th></tr>
+                            <tr><td style="border:1px solid #475569; padding:3px;">4.60 - 5.00</td><td style="border:1px solid #475569; padding:3px;">DESEMPEÑO SUPERIOR</td><td style="border:1px solid #475569; padding:3px; font-weight:bold;">D.S</td></tr>
+                            <tr><td style="border:1px solid #475569; padding:3px; background:#e0f2fe;">4.00 - 4.59</td><td style="border:1px solid #475569; padding:3px; background:#e0f2fe;">DESEMPEÑO ALTO</td><td style="border:1px solid #475569; padding:3px; background:#e0f2fe; font-weight:bold;">D.A</td></tr>
+                            <tr><td style="border:1px solid #475569; padding:3px;">3.00 - 3.99</td><td style="border:1px solid #475569; padding:3px;">DESEMPEÑO BÁSICO</td><td style="border:1px solid #475569; padding:3px; font-weight:bold;">D.BAS</td></tr>
+                            <tr><td style="border:1px solid #475569; padding:3px; background:#fee2e2;">1.00 - 2.99</td><td style="border:1px solid #475569; padding:3px; background:#fee2e2;">DESEMPEÑO BAJO</td><td style="border:1px solid #475569; padding:3px; background:#fee2e2; font-weight:bold;">D.B</td></tr>
                         </table>
                         
-                        <table style="width:65%; border-collapse: collapse; font-size: 11px; border:1px solid #475569;">
+                        <table style="width:60%; border-collapse: collapse; font-size: 9px; border:1px solid #475569;">
                             <tr>
-                                <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#f1f5f9; width:25%;">OBSERVACIONES</td>
-                                <td style="border:1px solid #475569; padding:6px; vertical-align:top; height:60px; font-style:italic;">${reco}</td>
+                                <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#f1f5f9; width:25%;">OBSERVACIONES</td>
+                                <td style="border:1px solid #475569; padding:4px; vertical-align:top; height:50px; font-style:italic;">${reco}</td>
                             </tr>
                             <tr>
-                                <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#f1f5f9;">FECHA DE ENTREGA</td>
-                                <td style="border:1px solid #475569; padding:6px;">${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
+                                <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#f1f5f9;">FECHA DE ENTREGA</td>
+                                <td style="border:1px solid #475569; padding:4px;">${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
                             </tr>
                         </table>
                     </div>
 
-                    <div style="margin-top: 50px; display: flex; justify-content: space-around; text-align: center; font-size: 11px; font-weight:bold;">
-                        <div><div style="border-top: 1px solid #000; width: 250px; margin: 0 auto 5px;"></div>FIRMA DIRECTOR(A) DE GRUPO</div>
-                        <div><div style="border-top: 1px solid #000; width: 250px; margin: 0 auto 5px;"></div>FIRMA COORDINACIÓN</div>
+                    <div style="margin-top: 40px; display: flex; justify-content: space-around; text-align: center; font-size: 10px; font-weight:bold;">
+                        <div><div style="border-top: 1px solid #000; width: 200px; margin: 0 auto 5px;"></div>FIRMA DOCENTE</div>
+                        <div><div style="border-top: 1px solid #000; width: 200px; margin: 0 auto 5px;"></div>FIRMA COORDINACIÓN</div>
                     </div>
                 </div>
             `;
+        };
+
+        window.imprimirBoletinEstudiante = (idEstudiante) => {
+            let est = window.appState.grados[window.appState.gradoActivo].estudiantes.find(e => e.id === idEstudiante);
+            if(!est) return;
+            // Se inyecta CSS temporal para forzar color y fondo en Chrome/Edge
+            let style = document.createElement('style');
+            style.innerHTML = `@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`;
+            document.head.appendChild(style);
+            
+            let htmlFinal = window.obtenerHTMLBoletin(est.nombre, est.pin, window.appState.gradoActivo, window.periodoActivo);
+            document.getElementById('vista-impresion').innerHTML = htmlFinal;
+            setTimeout(() => { 
+                window.print(); 
+                document.getElementById('vista-impresion').innerHTML = ''; 
+                document.head.removeChild(style);
+            }, 500);
         };
 
         window.printBoletinGeneral = () => {
@@ -1585,6 +1613,10 @@
             let estudiantesMaster = [...window.appState.grados[grado].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
             if(estudiantesMaster.length === 0) return window.customAlert("No hay estudiantes matriculados en este grado.");
             
+            let style = document.createElement('style');
+            style.innerHTML = `@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`;
+            document.head.appendChild(style);
+
             let htmlFinal = "";
             estudiantesMaster.forEach((est) => {
                 htmlFinal += window.obtenerHTMLBoletin(est.nombre, est.pin, grado, window.periodoActivo);
@@ -1594,62 +1626,54 @@
             setTimeout(() => { 
                 window.print(); 
                 document.getElementById('vista-impresion').innerHTML = ''; 
+                document.head.removeChild(style);
             }, 500);
         };
 
         window.imprimirReporteFamiliar = () => {
             let estNombre = window.datosPadre.nombre;
             let grado = window.datosPadre.grado;
+            
+            let style = document.createElement('style');
+            style.innerHTML = `@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`;
+            document.head.appendChild(style);
+
             let htmlFinal = window.obtenerHTMLBoletin(estNombre, window.datosPadre.pin, grado, 'final');
 
             document.getElementById('vista-impresion').innerHTML = htmlFinal;
             setTimeout(() => { 
                 window.print(); 
                 document.getElementById('vista-impresion').innerHTML = ''; 
+                document.head.removeChild(style);
             }, 500);
         };
 
         window.printPlanilla = () => {
             let ests = [...window.appState.grados[window.appState.gradoActivo].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
             let strPeriodo = window.periodoActivo === 'final' ? 'ACUMULADO ANUAL' : `PERIODO ${window.periodoActivo}`;
-            let logoDefault = window.masterDB[Object.keys(window.masterDB)[0]]?.logo || '';
-            const iH = logoDefault ? `<img src="${logoDefault}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; border-radius:50%; z-index:10;">` : '';
             
-            let header = `
-                <div class="mb-6 border-b-4 border-blue-900 pb-4 flex justify-between items-center" style="font-family: Arial, sans-serif; background:white;">
-                    <div class="flex items-center gap-4">
-                        <div style="position:relative; width:75px; height:75px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-radius:50%;">
-                            <div style="position:absolute; inset:0; background:#1e3a8a; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:18px; z-index:0;">CVS</div>
-                            ${iH}
-                        </div>
-                        <div>
-                            <h1 class="text-2xl font-black text-gray-900 m-0 tracking-tight" style="color: #0f172a;">COLEGIO VIDA SANA REDENSIÓN</h1>
-                            <p class="text-[11px] text-gray-600 m-0 leading-tight mt-1 font-medium">Fusagasugá - Cundinamarca</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <h2 class="font-black text-xl text-blue-800 m-0">PLANILLA - GRADO ${window.appState.gradoActivo}°</h2>
-                        <p class="text-sm text-gray-700 m-0 font-bold">ASIGNATURA: ${window.asignaturaActiva} | ${strPeriodo}</p>
-                    </div>
-                </div>
-            `;
+            let style = document.createElement('style');
+            style.innerHTML = `@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`;
+            document.head.appendChild(style);
 
-            let html = `<div style="padding: 20px; background: white;">${header}
-                <table style="width:100%; border-collapse:collapse; font-size:11px;">
-                    <thead><tr style="background:#1e3a8a; color:white; border:1px solid #1e3a8a;"><th style="border:1px solid #94a3b8; padding:6px;">No.</th><th style="border:1px solid #94a3b8; padding:6px; text-align:left;">Estudiante</th>`;
+            let header = window.getHeaderImpresion(`PLANILLA - GRADO ${window.appState.gradoActivo}°<br><span style="font-size:10px; font-weight:normal;">ASIGNATURA: ${window.asignaturaActiva} | ${strPeriodo}</span>`);
+
+            let html = `<div style="padding: 15px; background: white; font-family: Arial, sans-serif;">${header}
+                <table style="width:100%; border-collapse:collapse; font-size:10px; margin-top:10px;">
+                    <thead><tr style="background:#0ea5e9; color:white; border:1px solid #475569;"><th style="border:1px solid #475569; padding:4px;">No.</th><th style="border:1px solid #475569; padding:4px; text-align:left;">Estudiante</th>`;
             
             if(window.periodoActivo === 'final') {
-                html += `<th style="border:1px solid #94a3b8; padding:6px;">P1</th><th style="border:1px solid #94a3b8; padding:6px;">P2</th><th style="border:1px solid #94a3b8; padding:6px;">P3</th><th style="border:1px solid #94a3b8; padding:6px;">P4</th><th style="border:1px solid #94a3b8; padding:6px;">Def Anual</th></tr></thead><tbody>`;
+                html += `<th style="border:1px solid #475569; padding:4px;">P1</th><th style="border:1px solid #475569; padding:4px;">P2</th><th style="border:1px solid #475569; padding:4px;">P3</th><th style="border:1px solid #475569; padding:4px;">P4</th><th style="border:1px solid #475569; padding:4px;">Def Anual</th></tr></thead><tbody>`;
             } else {
-                html += `<th style="border:1px solid #94a3b8; padding:6px;">Comp(30)</th><th style="border:1px solid #94a3b8; padding:6px;">Part(10)</th><th style="border:1px solid #94a3b8; padding:6px;">Act(20)</th><th style="border:1px solid #94a3b8; padding:6px;">Exam(40)</th><th style="border:1px solid #94a3b8; padding:6px;">Def</th><th style="border:1px solid #94a3b8; padding:6px;">Fallas</th></tr></thead><tbody>`;
+                html += `<th style="border:1px solid #475569; padding:4px;">Comp(30)</th><th style="border:1px solid #475569; padding:4px;">Part(10)</th><th style="border:1px solid #475569; padding:4px;">Act(20)</th><th style="border:1px solid #475569; padding:4px;">Exam(40)</th><th style="border:1px solid #475569; padding:4px;">Def</th><th style="border:1px solid #475569; padding:4px;">Fallas</th></tr></thead><tbody>`;
             }
 
             ests.forEach((e, i) => {
                 let p = window.calcularPromedios(e.notas, window.periodoActivo);
                 if(window.periodoActivo === 'final') {
-                    html += `<tr><td style="border:1px solid #cbd5e1; text-align:center;">${i+1}</td><td style="border:1px solid #cbd5e1; padding:4px;"><b>${e.nombre}</b></td><td style="border:1px solid #cbd5e1; text-align:center;">${p.p1>0?p.p1:''}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.p2>0?p.p2:''}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.p3>0?p.p3:''}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.p4>0?p.p4:''}</td><td style="border:1px solid #cbd5e1; text-align:center; font-weight:bold; background:#f8fafc;">${p.def}</td></tr>`;
+                    html += `<tr><td style="border:1px solid #475569; text-align:center;">${i+1}</td><td style="border:1px solid #475569; padding:4px;"><b>${e.nombre}</b></td><td style="border:1px solid #475569; text-align:center;">${p.p1>0?p.p1:''}</td><td style="border:1px solid #475569; text-align:center;">${p.p2>0?p.p2:''}</td><td style="border:1px solid #475569; text-align:center;">${p.p3>0?p.p3:''}</td><td style="border:1px solid #475569; text-align:center;">${p.p4>0?p.p4:''}</td><td style="border:1px solid #475569; text-align:center; font-weight:bold; background:#f8fafc;">${p.def}</td></tr>`;
                 } else {
-                    html += `<tr><td style="border:1px solid #cbd5e1; text-align:center;">${i+1}</td><td style="border:1px solid #cbd5e1; padding:4px;"><b>${e.nombre}</b></td><td style="border:1px solid #cbd5e1; text-align:center;">${p.comp}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.part}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.act}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.exa}</td><td style="border:1px solid #cbd5e1; text-align:center; font-weight:bold; background:#f8fafc;">${p.def}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.totalClases>0?((100-p.asistencia)/100*p.totalClases).toFixed(0):0}</td></tr>`;
+                    html += `<tr><td style="border:1px solid #475569; text-align:center;">${i+1}</td><td style="border:1px solid #475569; padding:4px;"><b>${e.nombre}</b></td><td style="border:1px solid #475569; text-align:center;">${p.comp}</td><td style="border:1px solid #475569; text-align:center;">${p.part}</td><td style="border:1px solid #475569; text-align:center;">${p.act}</td><td style="border:1px solid #475569; text-align:center;">${p.exa}</td><td style="border:1px solid #475569; text-align:center; font-weight:bold; background:#f8fafc;">${p.def}</td><td style="border:1px solid #475569; text-align:center;">${p.totalClases>0?((100-p.asistencia)/100*p.totalClases).toFixed(0):0}</td></tr>`;
                 }
             });
             html += `</tbody></table><div class="mt-16 flex justify-around text-center text-xs" style="display:flex!important; page-break-inside:avoid; margin-top:50px;"><div><div style="border-top:1px solid black; width:200px; margin:0 auto 5px;"></div>Firma Docente</div><div><div style="border-top:1px solid black; width:200px; margin:0 auto 5px;"></div>Coordinación Académica</div></div></div>`;
@@ -1660,6 +1684,7 @@
                 window.print(); 
                 document.body.classList.remove('print-landscape'); 
                 document.getElementById('vista-impresion').innerHTML = ''; 
+                document.head.removeChild(style);
             }, 200);
         };
 
@@ -1677,7 +1702,7 @@
                 if(window.periodoActivo === 'final') {
                     c += `${e.nombre},${p.p1},${p.p2},${p.p3},${p.p4},${p.def},${d},${p.asistencia}%,${e.pin || '0000'}\n`;
                 } else {
-                    let obs = (e.observacion && e.observacion[window.periodoActivo]) ? e.observacion[window.periodoActivo].replace(/,/g, " ") : "";
+                    let obs = (e.observacion && typeof e.observacion === 'object' && e.observacion[window.periodoActivo]) ? e.observacion[window.periodoActivo].replace(/,/g, " ") : "";
                     c += `${e.nombre},${p.comp},${p.part},${p.act},${p.exa},${p.def},${d},${p.asistencia}%,${e.pin || '0000'},${obs}\n`;
                 }
             });
@@ -1709,12 +1734,29 @@
                     let datosExtraidos = data.masterDB ? data.masterDB : (data.grados ? { "Ciencias Naturales": data } : data);
                     delete datosExtraidos["masterDB"]; delete datosExtraidos["asignaturaActiva"]; delete datosExtraidos["logo"];
                     
+                    // Asegurar migración de viejos formatos
                     for(let asig in datosExtraidos) {
                         if(!datosExtraidos[asig].propietario && typeof user !== 'undefined' && user) {
                             datosExtraidos[asig].propietario = user.uid;
                             datosExtraidos[asig].propietarioNombre = user.email;
                         }
+                        for(let g=1; g<=5; g++) {
+                            let grado = datosExtraidos[asig].grados[g];
+                            if(typeof grado.dba === 'string') {
+                                grado.dba = { "1": grado.dba === "[object Object]" ? "" : grado.dba, "2": "", "3": "", "4": "" };
+                            }
+                            if(grado.estudiantes) {
+                                grado.estudiantes.forEach(est => {
+                                    if(typeof est.observacion === 'string') {
+                                        est.observacion = { "1": est.observacion === "[object Object]" ? "" : est.observacion, "2": "", "3": "", "4": "" };
+                                    }
+                                    if(!est.pin) est.pin = Math.floor(1000 + Math.random() * 9000).toString();
+                                    est.notas.forEach(n => { if(!n.periodo) n.periodo = 1; });
+                                });
+                            }
+                        }
                     }
+
                     window.masterDB = datosExtraidos;
                     if(data.logo) { for(let asig in window.masterDB) { window.masterDB[asig].logo = data.logo; } }
                     window.asignaturaActiva = Object.keys(window.masterDB)[0];
@@ -1731,9 +1773,41 @@
                         await Promise.all(promesas); 
                         window.showToast("¡Restaurado y subido con éxito!", "success");
                     }
-                } catch (err) { window.customAlert("Error al leer el archivo. Sube un archivo válido."); }
+                } catch (err) { window.customAlert("Error al leer: " + err.message); }
             };
             reader.readAsText(file);
+        };
+
+        window.moverAPeriodo3 = () => {
+            window.customConfirm("¿Seguro que deseas mover TODAS las notas, observaciones y DBAs del Periodo 1 al Periodo 3?", async () => {
+                let hizoCambios = false;
+                for(let asig in window.masterDB) {
+                    for(let g=1; g<=5; g++) {
+                        let grado = window.masterDB[asig].grados[g];
+                        if(grado.dba && typeof grado.dba === 'object' && grado.dba["1"]) { grado.dba["3"] = grado.dba["1"]; grado.dba["1"] = ""; hizoCambios = true; }
+                        if(grado.estudiantes) {
+                            grado.estudiantes.forEach(est => {
+                                if(est.observacion && typeof est.observacion === 'object' && est.observacion["1"]) { est.observacion["3"] = est.observacion["1"]; est.observacion["1"] = ""; hizoCambios = true; }
+                                est.notas.forEach(n => {
+                                    if(n.periodo === 1 || n.periodo === "1") { n.periodo = 3; hizoCambios = true; }
+                                });
+                            });
+                        }
+                    }
+                    if (hizoCambios && window.esPropietario) {
+                        await window.guardarEnNube(asig);
+                    }
+                }
+                
+                if(hizoCambios) {
+                    window.periodoActivo = "3";
+                    document.getElementById('periodo-selector').value = "3";
+                    window.actualizarUIComun();
+                    window.showToast("Tus datos fueron movidos al Periodo 3", "success");
+                } else {
+                    window.customAlert("No había datos en el Periodo 1 para mover.");
+                }
+            });
         };
 
         window.onload = inicializarFirebase;
