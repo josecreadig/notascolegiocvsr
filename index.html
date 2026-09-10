@@ -456,9 +456,10 @@
                         
                         window.masterDB = nuevasAsig;
                         
-                        let hizoMigracion = false;
+                        let asignaturasAMigrar = new Set();
                         for(let asig in window.masterDB) {
-                            if(logoGlobal && !window.masterDB[asig].logo) window.masterDB[asig].logo = logoGlobal;
+                            let asigModificada = false;
+                            if(logoGlobal && !window.masterDB[asig].logo) { window.masterDB[asig].logo = logoGlobal; asigModificada = true; }
                             for(let g=1; g<=5; g++) {
                                 let grado = window.masterDB[asig].grados[g];
                                 
@@ -469,12 +470,12 @@
                                     } else {
                                         grado.dba = { "1": grado.dba, "2": "", "3": "", "4": "" };
                                     }
-                                    hizoMigracion = true;
+                                    asigModificada = true;
                                 }
 
                                 if(grado.estudiantes) {
                                     grado.estudiantes.forEach(est => {
-                                        if(!est.pin) { est.pin = Math.floor(1000 + Math.random() * 9000).toString(); hizoMigracion = true; }
+                                        if(!est.pin) { est.pin = Math.floor(1000 + Math.random() * 9000).toString(); asigModificada = true; }
                                         
                                         if(typeof est.observacion === 'string') {
                                             if(est.observacion === "[object Object]") {
@@ -482,18 +483,19 @@
                                             } else {
                                                 est.observacion = { "1": est.observacion, "2": "", "3": "", "4": "" };
                                             }
-                                            hizoMigracion = true;
+                                            asigModificada = true;
                                         }
 
                                         est.notas.forEach(n => {
                                             if(!n.periodo) {
                                                 n.periodo = 1;
-                                                hizoMigracion = true;
+                                                asigModificada = true;
                                             }
                                         });
                                     });
                                 }
                             }
+                            if(asigModificada) asignaturasAMigrar.add(asig);
                         }
 
                         if (user.isAnonymous && window.datosPadre) {
@@ -526,7 +528,14 @@
                         }
                         
                         window.verificarPropiedad();
-                        if(hizoMigracion && window.esPropietario) window.guardarEnNube(window.asignaturaActiva); 
+                        
+                        // Guarda SOLO las materias que necesitaban reparación (Cero bucles infinitos)
+                        if(asignaturasAMigrar.size > 0) {
+                            asignaturasAMigrar.forEach(asig => {
+                                const esDueno = window.masterDB[asig].propietario === user.uid || (user.email && user.email.toLowerCase() === "josecreadig@gmail.com");
+                                if(esDueno) window.guardarEnNube(asig);
+                            });
+                        }
                         
                         window.actualizarUIComun();
                         document.getElementById('loading-screen').classList.add('opacity-0');
@@ -628,9 +637,6 @@
             }
             
             window.renderListaEstudiantes();
-            if (window.esPropietario) {
-                window.guardarEnNube();
-            }
         };
 
         window.cambiarAsignatura = () => {
