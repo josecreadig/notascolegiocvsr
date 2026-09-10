@@ -73,13 +73,13 @@
         <p class="text-gray-500 text-sm mt-2" id="load-subtext">Sincronizando base de datos institucional</p>
     </div>
 
-    <div id="login-screen" class="fixed inset-0 z-50 bg-blue-900 flex flex-col items-center justify-center no-print transition-opacity duration-500 hidden">
+    <div id="login-screen" class="fixed inset-0 z-50 bg-blue-900 flex flex-col items-center justify-center p-4 no-print transition-opacity duration-500 hidden">
         <div class="bg-white rounded-xl shadow-2xl overflow-hidden max-w-md w-full">
             <div class="flex border-b">
                 <button onclick="window.switchTab('tab-docente')" id="btn-tab-docente" class="flex-1 py-4 font-bold text-blue-600 border-b-2 border-blue-600 bg-blue-50 transition"><i class="fa-solid fa-chalkboard-user mr-2"></i>Docente</button>
                 <button onclick="window.switchTab('tab-padre')" id="btn-tab-padre" class="flex-1 py-4 font-bold text-gray-500 border-b-2 border-transparent hover:bg-gray-50 transition"><i class="fa-solid fa-children mr-2"></i>Acudiente</button>
             </div>
-            <div class="p-8">
+            <div class="p-6 sm:p-8">
                 <div id="tab-docente" class="text-center">
                     <i class="fa-solid fa-shield-halved text-4xl text-blue-600 mb-3"></i>
                     <h2 class="text-2xl font-bold text-gray-800 mb-2">Acceso Institucional</h2>
@@ -118,9 +118,9 @@
         </div>
     </div>
 
-    <nav class="bg-blue-800 text-white shadow-md p-4 no-print flex justify-between items-center relative z-30" id="main-nav">
-        <div class="flex items-center space-x-3">
-            <div id="logo-container" onclick="if(window.esPropietario && !window.modoPadre) document.getElementById('logo-upload').click()" class="w-12 h-12 relative bg-blue-900 rounded-full border-2 border-blue-400 overflow-hidden flex items-center justify-center cursor-pointer group shadow-inner">
+    <nav class="bg-blue-800 text-white shadow-md p-4 no-print flex flex-col sm:flex-row justify-between items-center gap-4 relative z-30" id="main-nav">
+        <div class="flex items-center space-x-3 w-full sm:w-auto justify-center sm:justify-start">
+            <div id="logo-container" onclick="if(window.esPropietario && !window.modoPadre) document.getElementById('logo-upload').click()" class="w-12 h-12 relative bg-blue-900 rounded-full border-2 border-blue-400 overflow-hidden flex items-center justify-center cursor-pointer group shadow-inner flex-shrink-0">
                 <span class="absolute text-xs font-bold text-white z-0">CVS</span>
                 <img id="nav-logo" src="" alt="Logo" class="absolute inset-0 w-full h-full object-cover z-10 hidden">
                 <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-20" id="logo-hover-icon">
@@ -130,36 +130,38 @@
             <input type="file" id="logo-upload" class="hidden" accept="image/*" onchange="window.cargarLogo(event)">
             <input type="file" id="foto-estudiante-upload" class="hidden" accept="image/*" onchange="window.procesarFotoEstudiante(event)">
             
-            <div>
-                <h1 class="text-xl font-bold leading-tight">Colegio Vida Sana Redensión</h1>
-                <p class="text-blue-200 text-sm" id="nav-subtitle">Súper Cuaderno (SIEE) - <span id="header-asignatura" class="font-bold text-yellow-300">Cargando...</span> <span id="badge-lectura" class="hidden ml-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded shadow">Solo Lectura</span></p>
+            <div class="text-center sm:text-left">
+                <h1 class="text-lg sm:text-xl font-bold leading-tight truncate">Colegio Vida Sana Redensión</h1>
+                <p class="text-blue-200 text-xs sm:text-sm truncate" id="nav-subtitle">Súper Cuaderno (SIEE) - <span id="header-asignatura" class="font-bold text-yellow-300">Cargando...</span> <span id="badge-lectura" class="hidden ml-2 bg-red-600 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded shadow">Solo Lectura</span></p>
             </div>
         </div>
-        <div class="flex items-center space-x-4">
-            <div id="user-info" class="hidden items-center gap-2 mr-2 cursor-pointer hover:bg-blue-700 p-1.5 rounded transition" onclick="window.editarPerfilDocente()" title="Haz clic para editar tu Nombre Real">
+        <div class="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto justify-center sm:justify-end">
+            <div id="user-info" class="hidden items-center gap-2 cursor-pointer hover:bg-blue-700 p-1.5 rounded transition" onclick="window.editarPerfilDocente()" title="Haz clic para editar tu Nombre Real">
                 <i class="fa-solid fa-circle-user text-2xl text-blue-300"></i>
-                <span id="user-name" class="text-xs font-bold text-blue-200 border-b border-dashed border-blue-400 pb-0.5"></span>
+                <span id="user-name" class="text-xs sm:text-sm font-bold text-blue-200 border-b border-dashed border-blue-400 pb-0.5 truncate max-w-[120px] sm:max-w-xs"></span>
             </div>
-            <span class="flex items-center text-sm font-medium text-green-300 bg-blue-900 px-3 py-1.5 rounded-full shadow-inner border border-blue-700">
+            <span class="hidden md:flex items-center text-xs sm:text-sm font-medium text-green-300 bg-blue-900 px-3 py-1.5 rounded-full shadow-inner border border-blue-700">
                 <i class="fa-solid fa-cloud text-green-400 mr-2 animate-pulse"></i> Nube Activa
             </span>
-            <button onclick="window.cerrarSesion()" class="text-xs bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded shadow transition flex items-center gap-2" title="Cerrar Sesión">
-                <i class="fa-solid fa-right-from-bracket"></i> <span id="btn-salir-text">Salir</span>
+            <button onclick="window.cerrarSesion()" class="text-xs sm:text-sm bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded shadow transition flex items-center gap-2 flex-shrink-0" title="Cerrar Sesión">
+                <i class="fa-solid fa-right-from-bracket"></i> <span id="btn-salir-text" class="hidden sm:inline">Salir</span>
             </button>
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto p-4 flex gap-6 no-print">
-        <div class="w-1/3 space-y-4" id="panel-izquierdo">
-            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+    <div class="max-w-7xl mx-auto p-4 flex flex-col lg:flex-row gap-6 no-print">
+        
+        <!-- Panel Izquierdo (Responsive width) -->
+        <div class="w-full lg:w-1/3 space-y-4" id="panel-izquierdo">
+            <div class="bg-white p-4 sm:p-5 rounded-lg shadow-sm border border-gray-200">
                 
                 <div class="mb-5 p-3 bg-blue-50 rounded border border-blue-200">
                     <label class="block text-xs font-bold text-blue-800 mb-2 uppercase"><i class="fa-solid fa-book text-blue-600 mr-1"></i> Asignatura Actual</label>
                     <div class="flex gap-2 mb-2">
-                        <select id="asignatura-selector" class="flex-1 border border-blue-300 rounded p-1 text-sm font-bold text-gray-700 bg-white outline-none focus:border-blue-500" onchange="window.cambiarAsignatura()"></select>
-                        <button id="btn-crear-asig" onclick="window.nuevaAsignatura()" class="bg-blue-600 text-white px-2.5 py-1 rounded shadow hover:bg-blue-500 transition" title="Crear nueva asignatura"><i class="fa-solid fa-plus"></i></button>
-                        <button id="btn-renombrar-asig" onclick="window.renombrarAsignatura()" class="bg-gray-600 text-white px-2.5 py-1 rounded shadow hover:bg-gray-500 transition" title="Renombrar asignatura"><i class="fa-solid fa-pen text-xs"></i></button>
-                        <button id="btn-eliminar-asig" onclick="window.eliminarAsignatura()" class="bg-red-500 text-white px-2.5 py-1 rounded shadow hover:bg-red-400 transition" title="Eliminar asignatura"><i class="fa-solid fa-trash text-xs"></i></button>
+                        <select id="asignatura-selector" class="flex-1 w-full border border-blue-300 rounded p-1 text-sm font-bold text-gray-700 bg-white outline-none focus:border-blue-500 truncate" onchange="window.cambiarAsignatura()"></select>
+                        <button id="btn-crear-asig" onclick="window.nuevaAsignatura()" class="bg-blue-600 text-white px-2.5 py-1 rounded shadow hover:bg-blue-500 transition flex-shrink-0" title="Crear nueva asignatura"><i class="fa-solid fa-plus"></i></button>
+                        <button id="btn-renombrar-asig" onclick="window.renombrarAsignatura()" class="bg-gray-600 text-white px-2.5 py-1 rounded shadow hover:bg-gray-500 transition flex-shrink-0" title="Renombrar asignatura"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button id="btn-eliminar-asig" onclick="window.eliminarAsignatura()" class="bg-red-500 text-white px-2.5 py-1 rounded shadow hover:bg-red-400 transition flex-shrink-0" title="Eliminar asignatura"><i class="fa-solid fa-trash text-xs"></i></button>
                     </div>
                     <div class="flex items-center gap-2 mt-2 pt-2 border-t border-blue-200">
                         <span class="text-xs font-bold text-blue-800">Intensidad Horaria (IHS): <span id="ihs-display" class="text-blue-600 text-sm">2</span> hrs</span>
@@ -167,14 +169,14 @@
                     </div>
                 </div>
 
-                <div class="flex gap-2 mb-4">
-                    <div class="w-1/2">
+                <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                    <div class="w-full sm:w-1/2">
                         <label class="block text-sm font-medium text-gray-600 mb-1">Grado Activo</label>
                         <select id="grado-selector" class="w-full border border-gray-300 rounded p-2 bg-gray-50 focus:border-blue-500 outline-none font-medium" onchange="window.cambiarGrado()">
                             <option value="1">Grado 1°</option><option value="2">Grado 2°</option><option value="3">Grado 3°</option><option value="4">Grado 4°</option><option value="5">Grado 5°</option>
                         </select>
                     </div>
-                    <div class="w-1/2">
+                    <div class="w-full sm:w-1/2">
                         <label class="block text-sm font-medium text-blue-800 mb-1"><i class="fa-solid fa-calendar-days mr-1"></i> Periodo</label>
                         <select id="periodo-selector" class="w-full border border-blue-300 rounded p-2 bg-blue-50 focus:border-blue-500 outline-none font-bold text-blue-800" onchange="window.cambiarPeriodo()">
                             <option value="1">Periodo 1</option>
@@ -189,43 +191,43 @@
                 <label class="block text-sm font-medium text-gray-600 mb-1">Competencia / DBA del Periodo</label>
                 <textarea id="dba-input" rows="2" class="w-full border border-gray-300 rounded p-2 text-sm focus:border-blue-500 outline-none transition" placeholder="Ej: Comprende el ciclo de vida..." onblur="window.guardarDBA()"></textarea>
                 
-                <div class="grid grid-cols-2 gap-2 mt-4">
-                    <button id="btn-vista-masiva" onclick="window.showMassiveView()" class="bg-yellow-500 hover:bg-yellow-400 text-white p-2 rounded text-sm font-medium transition shadow-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                    <button id="btn-vista-masiva" onclick="window.showMassiveView()" class="bg-yellow-500 hover:bg-yellow-400 text-white p-2 rounded text-sm font-medium transition shadow-sm w-full">
                         <i class="fa-solid fa-bolt mr-1"></i> Rápido
                     </button>
-                    <button onclick="window.showGroupStats()" class="bg-indigo-500 hover:bg-indigo-400 text-white p-2 rounded text-sm font-medium transition shadow-sm">
+                    <button onclick="window.showGroupStats()" class="bg-indigo-500 hover:bg-indigo-400 text-white p-2 rounded text-sm font-medium transition shadow-sm w-full">
                         <i class="fa-solid fa-chart-simple mr-1"></i> Estadísticas
                     </button>
-                    <button onclick="window.printPlanilla()" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded text-sm font-medium transition shadow-sm col-span-2">
+                    <button onclick="window.printPlanilla()" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded text-sm font-medium transition shadow-sm sm:col-span-2 w-full">
                         <i class="fa-solid fa-print mr-1"></i> Imprimir Planilla Auxiliar
                     </button>
-                    <button onclick="window.exportarExcel()" class="bg-green-600 hover:bg-green-500 text-white p-2 rounded text-sm font-medium transition col-span-2 shadow-sm">
+                    <button onclick="window.exportarExcel()" class="bg-green-600 hover:bg-green-500 text-white p-2 rounded text-sm font-medium transition shadow-sm sm:col-span-2 w-full">
                         <i class="fa-solid fa-file-excel mr-1"></i> Exportar a Excel
                     </button>
-                    <button onclick="window.printBoletinGeneral()" class="bg-purple-700 hover:bg-purple-600 text-white p-2 rounded text-sm font-bold transition col-span-2 shadow-sm mt-1">
+                    <button onclick="window.printBoletinGeneral()" class="bg-purple-700 hover:bg-purple-600 text-white p-2 rounded text-sm font-bold transition shadow-sm sm:col-span-2 mt-1 w-full">
                         <i class="fa-solid fa-award mr-1"></i> Generar Boletines (Todo el Grupo)
                     </button>
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200" id="panel-estudiantes">
+            <div class="bg-white p-4 sm:p-5 rounded-lg shadow-sm border border-gray-200" id="panel-estudiantes">
                 <form id="form-estudiante" class="mb-4 flex gap-2" onsubmit="window.agregarEstudiante(event)">
-                    <input type="text" id="nuevo-estudiante" placeholder="Nombre del estudiante..." class="flex-1 border border-gray-300 rounded p-2 text-sm outline-none focus:border-blue-500" required>
-                    <button type="submit" class="bg-gray-800 text-white px-3 rounded hover:bg-gray-700 transition shadow"><i class="fa-solid fa-plus"></i></button>
+                    <input type="text" id="nuevo-estudiante" placeholder="Nombre del estudiante..." class="flex-1 w-full border border-gray-300 rounded p-2 text-sm outline-none focus:border-blue-500" required>
+                    <button type="submit" class="bg-gray-800 text-white px-3 py-2 rounded hover:bg-gray-700 transition shadow flex-shrink-0"><i class="fa-solid fa-plus"></i></button>
                 </form>
                 <ul id="lista-estudiantes" class="space-y-2 max-h-96 overflow-y-auto pr-1"></ul>
             </div>
 
-            <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 no-print" id="panel-bd">
+            <div class="bg-white p-4 sm:p-5 rounded-lg shadow-sm border border-gray-200 no-print" id="panel-bd">
                 <h3 class="font-bold text-sm text-gray-700 mb-3"><i class="fa-solid fa-shield-halved text-blue-500 mr-1"></i> Base de Datos</h3>
-                <div class="flex gap-2">
-                    <button onclick="window.respaldarJSON()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Respaldar (Guardar en PC)">
-                        <i class="fa-solid fa-download"></i>
+                <div class="flex flex-wrap sm:flex-nowrap gap-2">
+                    <button onclick="window.respaldarJSON()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 p-2 rounded text-xs font-bold transition shadow-sm w-full sm:w-auto" title="Respaldar (Guardar en PC)">
+                        <i class="fa-solid fa-download"></i> Respaldar
                     </button>
-                    <button onclick="document.getElementById('restaurar-upload').value = ''; document.getElementById('restaurar-upload').click()" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Restaurar (Subir backup)">
-                        <i class="fa-solid fa-upload"></i>
+                    <button onclick="document.getElementById('restaurar-upload').value = ''; document.getElementById('restaurar-upload').click()" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 p-2 rounded text-xs font-bold transition shadow-sm w-full sm:w-auto" title="Restaurar (Subir backup)">
+                        <i class="fa-solid fa-upload"></i> Restaurar
                     </button>
-                    <button onclick="window.moverAPeriodo3()" class="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Mover notas del Periodo 1 al 3">
+                    <button onclick="window.moverAPeriodo3()" class="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 p-2 rounded text-xs font-bold transition shadow-sm w-full sm:w-auto" title="Mover notas del Periodo 1 al 3">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> A P3
                     </button>
                     <input type="file" id="restaurar-upload" class="hidden" accept=".json" onchange="window.restaurarJSON(event)">
@@ -233,11 +235,13 @@
             </div>
         </div>
 
-        <div id="panel-derecho" class="w-2/3 bg-white p-6 rounded-lg shadow-sm border border-gray-200 print-container relative min-h-screen">
-            <div class="text-center text-gray-400 py-32" id="mensaje-vacio">
-                <i class="fa-solid fa-arrow-left text-5xl mb-4 text-gray-300 animate-pulse"></i>
-                <p class="text-lg font-bold">Selecciona un estudiante o mira las estadísticas.</p>
-                <p class="text-sm mt-2 font-medium text-blue-500">Versión 2.0.4 - SIEE Profesional</p>
+        <!-- Panel Derecho (Responsive width) -->
+        <div id="panel-derecho" class="w-full lg:w-2/3 bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200 print-container relative min-h-screen">
+            <div class="text-center text-gray-400 py-20 sm:py-32" id="mensaje-vacio">
+                <i class="fa-solid fa-arrow-left text-4xl sm:text-5xl mb-4 text-gray-300 animate-pulse hidden lg:inline-block"></i>
+                <i class="fa-solid fa-arrow-up text-4xl sm:text-5xl mb-4 text-gray-300 animate-pulse lg:hidden"></i>
+                <p class="text-base sm:text-lg font-bold">Selecciona un estudiante o mira las estadísticas.</p>
+                <p class="text-xs sm:text-sm mt-2 font-medium text-blue-500">Versión 2.0.4 - SIEE Profesional</p>
             </div>
             <div id="contenido-dinamico" class="hidden w-full"></div>
         </div>
@@ -250,7 +254,7 @@
         import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Credenciales oficiales CVS corregidas
+        // Credenciales oficiales CVS
         const firebaseConfig = {
             apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
@@ -270,7 +274,7 @@
         window.appState = null;
         window.esPropietario = true;
         
-        // V2.0.1: Sistema de Periodos Activos
+        // V2.0.1: Sistema de Periodos Activos (Inicia en 3)
         window.periodoActivo = "3"; 
         
         window.estudianteActivo = null;
@@ -280,6 +284,26 @@
         window.modoPadre = false;
         window.datosPadre = null;
         let chartInstance = null;
+
+        // Escudo Anti-Borrado de Foco
+        window.focoActivoId = null;
+        window.focoValor = null;
+
+        document.addEventListener('focusin', (e) => {
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+                window.focoActivoId = e.target.id;
+                window.focoValor = e.target.value;
+            }
+        });
+        document.addEventListener('focusout', (e) => {
+            window.focoActivoId = null;
+            window.focoValor = null;
+        });
+        document.addEventListener('input', (e) => {
+            if (e.target.id === window.focoActivoId) {
+                window.focoValor = e.target.value;
+            }
+        });
 
         const modalEl = document.getElementById('custom-modal');
         const modalBox = document.getElementById('modal-box');
@@ -332,7 +356,7 @@
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             const color = type === 'success' ? 'bg-green-500' : (type === 'warning' ? 'bg-orange-500' : 'bg-gray-800');
-            toast.className = `toast text-white px-4 py-3 rounded shadow-lg mb-2 font-medium flex items-center gap-2 ${color}`;
+            toast.className = `toast text-white px-4 py-3 rounded shadow-lg mb-2 font-medium flex items-center gap-2 text-sm sm:text-base ${color}`;
             toast.innerHTML = type === 'warning' ? `<i class="fa-solid fa-triangle-exclamation"></i> ${msg}` : `<i class="fa-solid fa-check"></i> ${msg}`;
             container.appendChild(toast);
             void toast.offsetWidth;
@@ -474,16 +498,6 @@
                 const asignaturasRef = collection(db, 'artifacts', appId, 'public', 'data', 'asignaturas');
                 
                 window.unsubNube = onSnapshot(asignaturasRef, (snapshot) => {
-                    // ESCUDO DE FOCO (Focus Shield) - Mejorado contra borrados
-                    const activeEl = document.activeElement;
-                    const activeId = activeEl ? activeEl.id : null;
-                    const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-                    const activeValue = isInput ? activeEl.value : null;
-                    let selStart = null, selEnd = null;
-                    if (isInput && activeEl.type !== 'checkbox' && activeEl.type !== 'radio' && activeEl.type !== 'number') {
-                        try { selStart = activeEl.selectionStart; selEnd = activeEl.selectionEnd; } catch(e){}
-                    }
-
                     const nuevasAsig = {};
                     let logoGlobal = null;
                     
@@ -495,34 +509,12 @@
                     if(Object.keys(nuevasAsig).length > 0) {
                         window.masterDB = nuevasAsig;
                         
-                        let asigModificada = false;
                         let asignaturasAMigrar = new Set();
                         
-                        if(logoGlobal && !window.masterDB[window.asignaturaActiva]?.logo) { 
-                            if(window.masterDB[window.asignaturaActiva]) { window.masterDB[window.asignaturaActiva].logo = logoGlobal; asigModificada = true; }
-                        }
-
-                        // Modo Familiar interceptado
-                        if (user.isAnonymous && window.datosPadre) {
-                            window.modoPadre = true;
-                            let encontroHijo = false;
-                            for(let asig in window.masterDB) {
-                                let est = window.masterDB[asig].grados[window.datosPadre.grado].estudiantes.find(e => e.nombre.toLowerCase() === window.datosPadre.nombre.toLowerCase() && e.pin === window.datosPadre.pin);
-                                if(est) encontroHijo = true;
-                            }
-
-                            if(encontroHijo) {
-                                document.getElementById('loading-screen').classList.add('opacity-0');
-                                setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
-                                window.renderPortalFamiliar();
-                            } else {
-                                window.cerrarSesion();
-                                setTimeout(() => window.customAlert("Credenciales incorrectas. Verifica el Nombre y el PIN."), 1000);
-                            }
-                            return; 
-                        }
-
                         for(let asig in window.masterDB) {
+                            let asigModificada = false;
+                            if(logoGlobal && !window.masterDB[asig].logo) { window.masterDB[asig].logo = logoGlobal; asigModificada = true; }
+                            
                             for(let g=1; g<=5; g++) {
                                 let grado = window.masterDB[asig].grados[g];
                                 
@@ -560,6 +552,25 @@
                             if(asigModificada) asignaturasAMigrar.add(asig);
                         }
 
+                        if (user.isAnonymous && window.datosPadre) {
+                            window.modoPadre = true;
+                            let encontroHijo = false;
+                            for(let asig in window.masterDB) {
+                                let est = window.masterDB[asig].grados[window.datosPadre.grado].estudiantes.find(e => e.nombre.toLowerCase() === window.datosPadre.nombre.toLowerCase() && e.pin === window.datosPadre.pin);
+                                if(est) encontroHijo = true;
+                            }
+
+                            if(encontroHijo) {
+                                document.getElementById('loading-screen').classList.add('opacity-0');
+                                setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
+                                window.renderPortalFamiliar();
+                            } else {
+                                window.cerrarSesion();
+                                setTimeout(() => window.customAlert("Credenciales incorrectas. Verifica el Nombre y el PIN."), 1000);
+                            }
+                            return; 
+                        }
+
                         const vistaAsigAnterior = window.asignaturaActiva;
                         const vistaGradoAnterior = window.appState ? window.appState.gradoActivo : null;
 
@@ -577,7 +588,7 @@
                         
                         window.verificarPropiedad();
                         
-                        // Guardado seguro de migraciones cortando bucle infinito
+                        // Guarda SOLO las materias que necesitaban reparación (Cero bucles infinitos)
                         if(asignaturasAMigrar.size > 0) {
                             asignaturasAMigrar.forEach(asig => {
                                 const esDueno = window.masterDB[asig].propietario === user.uid || (user.email && user.email.toLowerCase() === "josecreadig@gmail.com");
@@ -587,20 +598,15 @@
 
                         window.actualizarUIComun();
 
-                        // RESTAURADOR DE FOCO
-                        if (activeId) {
+                        // RESTAURADOR DE FOCO ANTI-BORRADO
+                        if (window.focoActivoId) {
                             setTimeout(() => {
-                                const elToFocus = document.getElementById(activeId);
+                                const elToFocus = document.getElementById(window.focoActivoId);
                                 if (elToFocus) {
-                                    if (isInput && activeId !== 'asignatura-selector' && activeId !== 'grado-selector' && activeId !== 'periodo-selector') {
-                                        elToFocus.value = activeValue;
-                                    }
+                                    elToFocus.value = window.focoValor;
                                     elToFocus.focus();
-                                    if (selStart !== null && selEnd !== null) {
-                                        try { elToFocus.setSelectionRange(selStart, selEnd); } catch(e){}
-                                    }
                                 }
-                            }, 10);
+                            }, 50);
                         }
 
                         document.getElementById('loading-screen').classList.add('opacity-0');
@@ -646,7 +652,7 @@
             const targetAsig = asigEspecifica || window.asignaturaActiva;
             const asigRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', targetAsig);
             try { await setDoc(asigRef, window.masterDB[targetAsig]); } 
-            catch(e) { console.log("Permiso denegado por reglas."); }
+            catch(e) { console.log("Permiso denegado por reglas al guardar:", targetAsig); }
         };
 
         window.actualizarUIComun = () => {
@@ -727,6 +733,7 @@
                     window.appState.ihs = num;
                     document.getElementById('ihs-display').innerText = num;
                     window.guardarEnNube();
+                    window.showToast("Intensidad Horaria Actualizada", "success");
                 } else {
                     window.customAlert("Por favor ingresa un número válido mayor a 0.");
                 }
@@ -777,16 +784,16 @@
                 
                 try {
                     const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
-                    await deleteDoc(viejaRef);
+                    await deleteDoc(viejaRef); // Borra primero el zombie en la nube
                     
                     window.masterDB[nuevoNombre] = JSON.parse(JSON.stringify(window.masterDB[viejaAsig]));
-                    delete window.masterDB[viejaAsig]; 
+                    delete window.masterDB[viejaAsig]; // Borra el zombie en la pantalla
                     
                     window.asignaturaActiva = nuevoNombre;
                     window.appState = window.masterDB[nuevoNombre];
                     window.actualizarUIComun();
                     
-                    await window.guardarEnNube(nuevoNombre);
+                    await window.guardarEnNube(nuevoNombre); // Guarda el nuevo nombre
                     window.showToast("Asignatura renombrada exitosamente", "success");
                 } catch(e) {
                     window.customAlert("Error: Firebase rechazó el cambio. Es posible que no seas el propietario.");
@@ -803,16 +810,16 @@
                 
                 try {
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
-                    await deleteDoc(docRef);
+                    await deleteDoc(docRef); // Borra primero en la nube
                     
-                    delete window.masterDB[asigABorrar];
+                    delete window.masterDB[asigABorrar]; // Borra en pantalla
                     window.asignaturaActiva = Object.keys(window.masterDB)[0];
                     window.appState = window.masterDB[window.asignaturaActiva];
                     
                     window.actualizarUIComun();
                     window.showToast("Asignatura eliminada con éxito", "success");
                 } catch(e) {
-                    window.customAlert("Error: Firebase denegó la eliminación. Solo el creador puede hacerlo.");
+                    window.customAlert("Error: Firebase denegó la eliminación. Solo el creador de la materia puede borrarla.");
                 }
             });
         };
@@ -1031,7 +1038,7 @@
             let p = window.calcularPromedios(est.notas, window.periodoActivo);
             let des = window.getDesempeno(p.def);
 
-            let fotoHtml = est.foto ? `<img src="${est.foto}" class="w-16 h-16 rounded-full object-cover border-2 border-blue-400 shadow-sm bg-white">` : `<div class="w-16 h-16 rounded-full bg-blue-100 border-2 border-blue-400 flex items-center justify-center text-blue-500 text-2xl font-bold shadow-sm"><i class="fa-solid fa-user"></i></div>`;
+            let fotoHtml = est.foto ? `<img src="${est.foto}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-blue-400 shadow-sm bg-white flex-shrink-0">` : `<div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-blue-100 border-2 border-blue-400 flex items-center justify-center text-blue-500 text-2xl sm:text-3xl font-bold shadow-sm flex-shrink-0"><i class="fa-solid fa-user"></i></div>`;
             let clickHandler = window.esPropietario ? `onclick="document.getElementById('foto-estudiante-upload').click()"` : "";
             let hoverClass = window.esPropietario ? "cursor-pointer group relative" : "";
             let hoverOverlay = window.esPropietario ? `<div class="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-camera text-white"></i></div>` : "";
@@ -1043,33 +1050,33 @@
             }
 
             let html = `
-                <div class="flex justify-between items-start mb-6 no-print">
-                    <div class="flex items-center gap-4">
-                        <div class="${hoverClass}" ${clickHandler} title="${window.esPropietario ? 'Cambiar foto del estudiante' : ''}">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 no-print">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left w-full md:w-auto">
+                        <div class="${hoverClass} mx-auto sm:mx-0" ${clickHandler} title="${window.esPropietario ? 'Cambiar foto del estudiante' : ''}">
                             ${fotoHtml}
                             ${hoverOverlay}
                         </div>
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800 inline-flex items-center">
+                            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 inline-flex items-center justify-center sm:justify-start flex-wrap">
                                 ${est.nombre}
-                                ${window.esPropietario ? `<button onclick="window.editarNombreEstudiante()" class="ml-3 text-blue-500 hover:text-blue-700 text-sm transition"><i class="fa-solid fa-pen"></i></button>` : ''}
+                                ${window.esPropietario ? `<button onclick="window.editarNombreEstudiante()" class="ml-2 text-blue-500 hover:text-blue-700 text-sm transition"><i class="fa-solid fa-pen"></i></button>` : ''}
                             </h2>
-                            <p class="text-sm text-gray-500 font-bold">${window.asignaturaActiva} - Grado ${window.appState.gradoActivo}° | <span class="text-blue-600">${window.periodoActivo==='final'?'Acumulado Anual':'Periodo '+window.periodoActivo}</span></p>
+                            <p class="text-xs sm:text-sm text-gray-500 font-bold mt-1">${window.asignaturaActiva} - Grado ${window.appState.gradoActivo}° | <span class="text-blue-600">${window.periodoActivo==='final'?'Acumulado Anual':'Periodo '+window.periodoActivo}</span></p>
                             <p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-key text-green-500 mr-1"></i>PIN Familias: <b class="text-gray-700 tracking-widest">${est.pin || '0000'}</b> ${window.esPropietario ? `<button onclick="window.cambiarPIN()" class="text-blue-500 ml-2 hover:underline">Cambiar</button>` : ''}</p>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="window.imprimirObservador('${est.id}')" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded shadow transition text-sm font-bold flex items-center gap-2" title="Imprimir Observador"><i class="fa-solid fa-book-open-reader"></i> Observador</button>
-                        <button onclick="window.imprimirBoletinEstudiante('${est.id}')" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded shadow transition text-sm font-bold flex items-center gap-2" title="Imprimir Boletín Oficial"><i class="fa-solid fa-print"></i> Boletín</button>
-                        ${window.esPropietario ? `<button onclick="window.eliminarEstudiante()" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-2 rounded shadow transition text-sm" title="Eliminar Estudiante"><i class="fa-solid fa-trash"></i></button>` : ''}
+                    <div class="flex flex-wrap justify-center sm:justify-end gap-2 w-full md:w-auto">
+                        <button onclick="window.imprimirObservador('${est.id}')" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded shadow transition text-xs sm:text-sm font-bold flex items-center justify-center gap-2 flex-1 sm:flex-none" title="Imprimir Observador"><i class="fa-solid fa-book-open-reader"></i> Observador</button>
+                        <button onclick="window.imprimirBoletinEstudiante('${est.id}')" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded shadow transition text-xs sm:text-sm font-bold flex items-center justify-center gap-2 flex-1 sm:flex-none" title="Imprimir Boletín Oficial"><i class="fa-solid fa-print"></i> Boletín</button>
+                        ${window.esPropietario ? `<button onclick="window.eliminarEstudiante()" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-2 rounded shadow transition text-sm flex items-center justify-center" title="Eliminar Estudiante"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </div>
                 </div>
             `;
 
             if (window.periodoActivo === 'final') {
                 html += `
-                    <div class="flex gap-6 mb-6">
-                        <div class="grid grid-cols-2 gap-3 w-1/2">
+                    <div class="flex flex-col xl:flex-row gap-6 mb-6">
+                        <div class="grid grid-cols-2 gap-3 w-full xl:w-1/2">
                             <div class="bg-gray-50 p-3 rounded-lg border text-center shadow-sm">
                                 <p class="text-xs font-bold text-gray-500 uppercase">Periodo 1</p>
                                 <p class="text-xl font-black text-gray-800">${p.p1 > 0 ? p.p1 : '-'}</p>
@@ -1087,13 +1094,13 @@
                                 <p class="text-xl font-black text-gray-800">${p.p4 > 0 ? p.p4 : '-'}</p>
                             </div>
                             <div class="${des.bg} p-3 rounded-lg border text-center shadow-sm border-2 col-span-2">
-                                <p class="text-[10px] font-bold uppercase ${des.color} leading-tight mb-1">Definitiva Anual</p>
-                                <p class="text-2xl font-black ${des.color}">${p.def}</p>
-                                <p class="text-[9px] font-bold mt-1 ${des.color}">${des.texto}</p>
+                                <p class="text-[10px] sm:text-xs font-bold uppercase ${des.color} leading-tight mb-1">Definitiva Anual</p>
+                                <p class="text-2xl sm:text-3xl font-black ${des.color}">${p.def}</p>
+                                <p class="text-[9px] sm:text-xs font-bold mt-1 ${des.color}">${des.texto}</p>
                             </div>
                         </div>
-                        <div class="w-1/2 bg-white rounded-lg border p-4 shadow-sm flex items-center justify-center">
-                            <canvas id="grafico-estudiante" class="w-full max-h-56"></canvas>
+                        <div class="w-full xl:w-1/2 bg-white rounded-lg border p-4 shadow-sm flex items-center justify-center">
+                            <canvas id="grafico-estudiante" class="w-full max-h-56 sm:max-h-64"></canvas>
                         </div>
                     </div>
                     <div class="bg-blue-50 p-4 rounded text-blue-800 text-sm font-medium border border-blue-200">
@@ -1114,57 +1121,57 @@
                             backgroundColor: '#3b82f6', borderRadius: 4
                         }]
                     },
-                    options: { animation: false, scales: { y: { min: 0, max: 5 } }, plugins: { legend: { display: false } } }
+                    options: { animation: false, scales: { y: { min: 0, max: 5 } }, plugins: { legend: { display: false } }, maintainAspectRatio: false }
                 });
 
             } else {
                 let notasMostrar = est.notas.map((n, i) => ({...n, realIdx: i})).filter(n => parseInt(n.periodo) === parseInt(window.periodoActivo));
 
                 html += `
-                    <div class="flex gap-6 mb-6">
-                        <div class="grid grid-cols-2 gap-3 w-1/2">
-                            <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 text-center shadow-sm">
-                                <p class="text-[10px] font-bold text-blue-800 uppercase leading-tight mb-1">Compromiso (30%)</p>
-                                <p class="text-xl font-black text-blue-600">${p.comp}</p>
+                    <div class="flex flex-col xl:flex-row gap-6 mb-6">
+                        <div class="grid grid-cols-2 gap-3 w-full xl:w-1/2">
+                            <div class="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-100 text-center shadow-sm">
+                                <p class="text-[9px] sm:text-[10px] font-bold text-blue-800 uppercase leading-tight mb-1">Compromiso (30%)</p>
+                                <p class="text-lg sm:text-xl font-black text-blue-600">${p.comp}</p>
                             </div>
-                            <div class="bg-green-50 p-3 rounded-lg border border-green-100 text-center shadow-sm">
-                                <p class="text-[10px] font-bold text-green-800 uppercase leading-tight mb-1">Participación (10%)</p>
-                                <p class="text-xl font-black text-green-600">${p.part}</p>
+                            <div class="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-100 text-center shadow-sm">
+                                <p class="text-[9px] sm:text-[10px] font-bold text-green-800 uppercase leading-tight mb-1">Participación (10%)</p>
+                                <p class="text-lg sm:text-xl font-black text-green-600">${p.part}</p>
                             </div>
-                            <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100 text-center shadow-sm">
-                                <p class="text-[10px] font-bold text-yellow-800 uppercase leading-tight mb-1">Actitud (20%)</p>
-                                <p class="text-xl font-black text-yellow-600">${p.act}</p>
+                            <div class="bg-yellow-50 p-2 sm:p-3 rounded-lg border border-yellow-100 text-center shadow-sm">
+                                <p class="text-[9px] sm:text-[10px] font-bold text-yellow-800 uppercase leading-tight mb-1">Actitud (20%)</p>
+                                <p class="text-lg sm:text-xl font-black text-yellow-600">${p.act}</p>
                             </div>
-                            <div class="bg-purple-50 p-3 rounded-lg border border-purple-100 text-center shadow-sm">
-                                <p class="text-[10px] font-bold text-purple-800 uppercase leading-tight mb-1">Examen (40%)</p>
-                                <p class="text-xl font-black text-purple-600">${p.exa}</p>
+                            <div class="bg-purple-50 p-2 sm:p-3 rounded-lg border border-purple-100 text-center shadow-sm">
+                                <p class="text-[9px] sm:text-[10px] font-bold text-purple-800 uppercase leading-tight mb-1">Examen (40%)</p>
+                                <p class="text-lg sm:text-xl font-black text-purple-600">${p.exa}</p>
                             </div>
                             <div class="${des.bg} p-3 rounded-lg border text-center shadow-sm border-2 col-span-2">
                                 <p class="text-[10px] font-bold uppercase ${des.color} leading-tight mb-1">Definitiva Periodo ${window.periodoActivo}</p>
-                                <p class="text-2xl font-black ${des.color}">${p.def}</p>
+                                <p class="text-2xl sm:text-3xl font-black ${des.color}">${p.def}</p>
                                 <p class="text-[9px] font-bold mt-1 ${des.color}">${des.texto}</p>
                             </div>
                         </div>
                         
-                        <div class="w-1/2 bg-white rounded-lg border p-2 flex items-center justify-center shadow-sm">
-                            <canvas id="grafico-estudiante" class="w-full max-h-56"></canvas>
+                        <div class="w-full xl:w-1/2 bg-white rounded-lg border p-2 flex items-center justify-center shadow-sm min-h-[200px]">
+                            <canvas id="grafico-estudiante" class="w-full max-h-56 sm:max-h-64"></canvas>
                         </div>
                     </div>
 
                     ${p.def > 0 && p.def < 3.0 ? `<div class="bg-red-50 border-l-4 border-red-500 p-3 mb-4 rounded shadow-sm"><p class="text-sm text-red-700 font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Requiere Nivelación</p></div>` : ''}
 
                     ${window.esPropietario ? `
-                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6 no-print shadow-sm">
-                        <form onsubmit="window.agregarNota(event)" class="flex gap-3 items-end">
-                            <div class="w-32">
+                    <div class="bg-blue-50 p-3 sm:p-4 rounded-lg border border-blue-200 mb-6 no-print shadow-sm">
+                        <form onsubmit="window.agregarNota(event)" class="flex flex-col sm:flex-row flex-wrap gap-3 items-start sm:items-end">
+                            <div class="w-full sm:w-32">
                                 <label class="block text-xs font-bold text-blue-800 mb-1">Fecha</label>
                                 <input type="date" id="nota-fecha" class="w-full border-blue-300 rounded p-2 text-sm outline-none" value="${window.lastCriterios.fecha}" required>
                             </div>
-                            <div class="flex-1">
+                            <div class="flex-1 w-full sm:w-auto min-w-[150px]">
                                 <label class="block text-xs font-bold text-blue-800 mb-1">Actividad</label>
                                 <input type="text" id="nota-tema" class="w-full border-blue-300 rounded p-2 text-sm outline-none" value="${window.lastCriterios.tema}" required>
                             </div>
-                            <div class="w-36">
+                            <div class="w-full sm:w-36">
                                 <label class="block text-xs font-bold text-blue-800 mb-1">Dimensión</label>
                                 <select id="nota-dim" class="w-full border-blue-300 rounded p-2 text-sm outline-none">
                                     <option ${window.lastCriterios.dimension==='Compromiso'?'selected':''}>Compromiso</option>
@@ -1173,51 +1180,53 @@
                                     <option ${window.lastCriterios.dimension==='Examen'?'selected':''}>Examen</option>
                                 </select>
                             </div>
-                            <div class="w-20">
+                            <div class="w-full sm:w-20">
                                 <label class="block text-xs font-bold text-blue-800 mb-1">Nota</label>
                                 <input type="number" id="nota-val" step="0.1" min="1.0" max="5.0" class="w-full border-blue-300 rounded p-2 text-sm text-center font-bold outline-none" required>
                             </div>
-                            <div class="w-16 text-center">
-                                <label class="block text-xs font-bold text-blue-800 mb-2">Asistió</label>
+                            <div class="w-full sm:w-16 flex sm:flex-col items-center justify-between sm:justify-start">
+                                <label class="block text-xs font-bold text-blue-800 sm:mb-2">Asistió</label>
                                 <input type="checkbox" id="nota-asistencia" checked class="w-5 h-5 accent-blue-600">
                             </div>
-                            <button type="submit" id="btn-guardar-nota" class="bg-blue-600 text-white px-5 py-2 rounded font-bold hover:bg-blue-500 shadow"><i class="fa-solid fa-plus"></i></button>
+                            <button type="submit" id="btn-guardar-nota" class="w-full sm:w-auto bg-blue-600 text-white px-5 py-2 rounded font-bold hover:bg-blue-500 shadow transition"><i class="fa-solid fa-plus mr-2 sm:mr-0"></i><span class="sm:hidden">Guardar Nota</span></button>
                         </form>
                     </div>
                     ` : `<div class="bg-red-50 p-3 rounded border border-red-200 mb-6 text-red-700 text-sm font-bold text-center"><i class="fa-solid fa-lock mr-2"></i>Modo Lectura Activo.</div>`}
 
-                    <table class="w-full text-sm border-collapse mb-6">
-                        <thead>
-                            <tr class="bg-gray-100 text-gray-600 text-left">
-                                <th class="p-2 border-y">Fecha</th>
-                                <th class="p-2 border-y">Actividad</th>
-                                <th class="p-2 border-y">Dimensión</th>
-                                <th class="p-2 border-y text-center">Nota</th>
-                                <th class="p-2 border-y text-center">Falla</th>
-                                <th class="p-2 border-y text-right no-print">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${notasMostrar.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-gray-400">Sin calificaciones en este periodo</td></tr>` : ''}
-                            ${notasMostrar.map((n) => `
-                                <tr class="border-b border-gray-100 ${window.notaEnEdicion === n.realIdx ? 'bg-yellow-100' : ''}">
-                                    <td class="p-2 text-gray-500">${n.fecha}</td>
-                                    <td class="p-2 font-medium text-gray-700">${n.tema}</td>
-                                    <td class="p-2"><span class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs">${n.dimension}</span></td>
-                                    <td class="p-2 text-center font-black">${n.valor}</td>
-                                    <td class="p-2 text-center text-red-500 font-bold">${n.asistio ? '' : 'X'}</td>
-                                    <td class="p-2 text-right no-print">
-                                        ${window.esPropietario ? `
-                                        <button onclick="window.cargarEdicionNota(${n.realIdx})" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="window.eliminarNota(${n.realIdx})" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
-                                        ` : `<i class="fa-solid fa-lock text-gray-300"></i>`}
-                                    </td>
+                    <div class="overflow-x-auto border rounded bg-white mb-6">
+                        <table class="w-full text-sm border-collapse min-w-[500px]">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 text-left">
+                                    <th class="p-2 border-b">Fecha</th>
+                                    <th class="p-2 border-b">Actividad</th>
+                                    <th class="p-2 border-b">Dimensión</th>
+                                    <th class="p-2 border-b text-center">Nota</th>
+                                    <th class="p-2 border-b text-center">Falla</th>
+                                    <th class="p-2 border-b text-right no-print">Acciones</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                ${notasMostrar.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-gray-400">Sin calificaciones en este periodo</td></tr>` : ''}
+                                ${notasMostrar.map((n) => `
+                                    <tr class="border-b border-gray-100 ${window.notaEnEdicion === n.realIdx ? 'bg-yellow-100' : ''}">
+                                        <td class="p-2 text-gray-500">${n.fecha}</td>
+                                        <td class="p-2 font-medium text-gray-700">${n.tema}</td>
+                                        <td class="p-2"><span class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs">${n.dimension}</span></td>
+                                        <td class="p-2 text-center font-black">${n.valor}</td>
+                                        <td class="p-2 text-center text-red-500 font-bold">${n.asistio ? '' : 'X'}</td>
+                                        <td class="p-2 text-right no-print">
+                                            ${window.esPropietario ? `
+                                            <button onclick="window.cargarEdicionNota(${n.realIdx})" class="text-blue-500 hover:text-blue-700 mr-3 p-1"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="window.eliminarNota(${n.realIdx})" class="text-red-400 hover:text-red-600 p-1"><i class="fa-solid fa-trash"></i></button>
+                                            ` : `<i class="fa-solid fa-lock text-gray-300"></i>`}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
 
-                    <div class="border-t-2 border-gray-200 pt-4 mt-6">
+                    <div class="border-t-2 border-gray-200 pt-4 mt-2">
                         <h3 class="font-bold text-gray-700 mb-2"><i class="fa-solid fa-book-open text-blue-500 mr-2"></i>Bitácora de Observaciones del Docente (Privado)</h3>
                         <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" placeholder="Anotaciones privadas (comportamiento, tareas faltantes, etc). Útil para el reporte del Observador." onblur="window.guardarObservacionSilenciosa()" ${!window.esPropietario ? 'disabled' : ''}>${obsText}</textarea>
                     </div>
@@ -1236,7 +1245,7 @@
                             backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', pointBackgroundColor: 'rgba(59, 130, 246, 1)', borderWidth: 2
                         }]
                     },
-                    options: { animation: false, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+                    options: { animation: false, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } }, maintainAspectRatio: false }
                 });
             }
         };
@@ -1269,7 +1278,7 @@
             
             let btn = document.getElementById('btn-guardar-nota');
             btn.innerHTML = '<i class="fa-solid fa-save mr-1"></i> G.';
-            btn.className = "bg-yellow-500 text-black px-5 py-2 rounded font-bold hover:bg-yellow-400 shadow";
+            btn.className = "w-full sm:w-auto bg-yellow-500 text-black px-5 py-2 rounded font-bold hover:bg-yellow-400 shadow";
         };
 
         window.agregarNota = (e) => {
@@ -1316,44 +1325,46 @@
             let ests = window.appState.grados[window.appState.gradoActivo].estudiantes;
             
             panel.innerHTML = `
-                <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4">
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-bolt text-yellow-500 mr-2"></i> Calificación Rápida - Periodo ${window.periodoActivo}</h2>
+                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800"><i class="fa-solid fa-bolt text-yellow-500 mr-2"></i> Calificación Rápida - Periodo ${window.periodoActivo}</h2>
                         <p class="text-sm text-gray-500 font-bold">${window.asignaturaActiva} - Grado ${window.appState.gradoActivo}°</p>
                     </div>
-                    ${window.esPropietario ? `<button onclick="window.guardarMasivo()" class="bg-green-600 text-white px-6 py-2 rounded font-bold shadow hover:bg-green-500 transition"><i class="fa-solid fa-save mr-1"></i> Guardar Todo</button>` : `<span class="bg-gray-200 text-gray-500 px-4 py-2 rounded font-bold shadow-inner">Modo Lectura</span>`}
+                    ${window.esPropietario ? `<button onclick="window.guardarMasivo()" class="bg-green-600 text-white px-6 py-2 rounded font-bold shadow hover:bg-green-500 transition w-full sm:w-auto"><i class="fa-solid fa-save mr-1"></i> Guardar Todo</button>` : `<span class="bg-gray-200 text-gray-500 px-4 py-2 rounded font-bold shadow-inner">Modo Lectura</span>`}
                 </div>
                 
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6 flex gap-4 shadow-sm">
-                    <div class="w-40">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6 flex flex-col sm:flex-row gap-4 shadow-sm">
+                    <div class="w-full sm:w-40">
                         <label class="block text-xs font-bold text-blue-800 mb-1">Fecha</label>
                         <input type="date" id="m-fecha" class="w-full border-blue-300 rounded p-2 text-sm outline-none" value="${window.getFechaHoyInput()}" ${!window.esPropietario ? 'disabled' : ''}>
                     </div>
-                    <div class="flex-1">
+                    <div class="flex-1 w-full sm:w-auto">
                         <label class="block text-xs font-bold text-blue-800 mb-1">Actividad General</label>
                         <input type="text" id="m-tema" class="w-full border-blue-300 rounded p-2 text-sm outline-none" ${!window.esPropietario ? 'disabled' : ''}>
                     </div>
-                    <div class="w-48">
+                    <div class="w-full sm:w-48">
                         <label class="block text-xs font-bold text-blue-800 mb-1">Dimensión</label>
                         <select id="m-dim" class="w-full border-blue-300 rounded p-2 text-sm outline-none" ${!window.esPropietario ? 'disabled' : ''}>
                             <option>Compromiso</option><option>Participación</option><option>Actitud</option><option>Examen</option>
                         </select>
                     </div>
                 </div>
-                <table class="w-full text-sm border-collapse bg-white shadow-sm rounded overflow-hidden">
-                    <thead class="bg-gray-800 text-white text-left">
-                        <tr><th class="p-3">Estudiante</th><th class="p-3 w-32 text-center">Nota</th><th class="p-3 w-24 text-center">Asistió</th></tr>
-                    </thead>
-                    <tbody id="m-lista">
-                        ${[...ests].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map((e, idx) => `
-                            <tr class="border-b" data-id="${e.id}">
-                                <td class="p-3 font-medium text-gray-700">${e.nombre}</td>
-                                <td class="p-2"><input type="number" id="m-val-${idx}" step="0.1" min="1.0" max="5.0" class="m-val border rounded p-2 w-full text-center font-bold outline-none" ${!window.esPropietario ? 'disabled' : ''}></td>
-                                <td class="p-2 text-center"><input type="checkbox" id="m-asis-${idx}" class="m-asis w-5 h-5 accent-blue-600" checked ${!window.esPropietario ? 'disabled' : ''}></td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+                <div class="overflow-x-auto bg-white shadow-sm rounded border">
+                    <table class="w-full text-sm border-collapse min-w-[450px]">
+                        <thead class="bg-gray-800 text-white text-left">
+                            <tr><th class="p-3">Estudiante</th><th class="p-3 w-24 sm:w-32 text-center">Nota</th><th class="p-3 w-20 sm:w-24 text-center">Asistió</th></tr>
+                        </thead>
+                        <tbody id="m-lista">
+                            ${[...ests].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map((e, idx) => `
+                                <tr class="border-b" data-id="${e.id}">
+                                    <td class="p-3 font-medium text-gray-700">${e.nombre}</td>
+                                    <td class="p-2"><input type="number" id="m-val-${e.id}" step="0.1" min="1.0" max="5.0" class="m-val border rounded p-2 w-full text-center font-bold outline-none focus:border-blue-500" ${!window.esPropietario ? 'disabled' : ''}></td>
+                                    <td class="p-2 text-center"><input type="checkbox" id="m-asis-${e.id}" class="m-asis w-5 h-5 accent-blue-600" checked ${!window.esPropietario ? 'disabled' : ''}></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
             `;
         };
 
@@ -1403,16 +1414,16 @@
             panel.innerHTML = `
                 <div class="flex justify-between items-center mb-6 border-b pb-4">
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-chart-pie text-indigo-500 mr-2"></i> Estadísticas del Grupo</h2>
+                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800"><i class="fa-solid fa-chart-pie text-indigo-500 mr-2"></i> Estadísticas del Grupo</h2>
                         <p class="text-sm text-gray-500 font-bold">${window.asignaturaActiva} - Grado ${window.appState.gradoActivo}° | ${window.periodoActivo === 'final' ? 'Acumulado Anual' : 'Periodo '+window.periodoActivo}</p>
                     </div>
                 </div>
-                <div class="flex flex-col items-center justify-center bg-white border p-6 rounded-lg shadow-sm">
-                    <h3 class="font-bold text-gray-700 mb-4">Rendimiento General</h3>
-                    <div class="w-full max-w-lg">
+                <div class="flex flex-col items-center justify-center bg-white border p-4 sm:p-6 rounded-lg shadow-sm">
+                    <h3 class="font-bold text-gray-700 mb-4 text-center">Rendimiento General</h3>
+                    <div class="w-full max-w-lg overflow-hidden flex justify-center min-h-[250px]">
                         <canvas id="grafico-grupal"></canvas>
                     </div>
-                    <div class="mt-6 flex gap-4 text-sm font-medium">
+                    <div class="mt-6 flex flex-wrap justify-center gap-3 text-xs sm:text-sm font-medium w-full">
                         <span class="text-purple-700 bg-purple-100 px-3 py-1 rounded">Superior: ${conteo.superior}</span>
                         <span class="text-green-700 bg-green-100 px-3 py-1 rounded">Alto: ${conteo.alto}</span>
                         <span class="text-yellow-700 bg-yellow-100 px-3 py-1 rounded">Básico: ${conteo.basico}</span>
@@ -1433,13 +1444,13 @@
                         backgroundColor: ['#9333ea', '#16a34a', '#ca8a04', '#dc2626', '#9ca3af'], borderRadius: 4
                     }]
                 },
-                options: { animation: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                options: { animation: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, maintainAspectRatio: false }
             });
         };
 
         window.renderPortalFamiliar = () => {
             document.getElementById('panel-izquierdo').classList.add('hidden');
-            document.getElementById('panel-derecho').classList.remove('w-2/3');
+            document.getElementById('panel-derecho').classList.remove('lg:w-2/3');
             document.getElementById('panel-derecho').classList.add('w-full');
             document.getElementById('mensaje-vacio').classList.add('hidden');
             
@@ -1481,7 +1492,7 @@
                                 <td class="p-3 text-center text-gray-600 font-bold">${promedios.p2>0?promedios.p2:'-'}</td>
                                 <td class="p-3 text-center text-gray-600 font-bold">${promedios.p3>0?promedios.p3:'-'}</td>
                                 <td class="p-3 text-center text-gray-600 font-bold">${promedios.p4>0?promedios.p4:'-'}</td>
-                                <td class="p-3 text-center text-lg font-black text-gray-800 bg-blue-50">${promedios.def}</td>
+                                <td class="p-3 text-center text-base sm:text-lg font-black text-gray-800 bg-blue-50">${promedios.def}</td>
                                 <td class="p-3 text-center font-bold ${des.color}">${des.texto}</td>
                             </tr>
                         `;
@@ -1492,44 +1503,46 @@
             let promedioGeneral = totalAsignaturas > 0 ? (sumaDefinitivas / totalAsignaturas).toFixed(1) : "0.0";
             let desGeneral = window.getDesempeno(promedioGeneral);
 
-            let avatarPadre = fotoFamiliar ? `<img src="${fotoFamiliar}" class="w-32 h-32 rounded-full object-cover mx-auto mb-3 border-4 border-white shadow-lg bg-white">` : `<i class="fa-solid fa-user-graduate text-5xl text-blue-300 mb-3"></i>`;
+            let avatarPadre = fotoFamiliar ? `<img src="${fotoFamiliar}" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover mx-auto mb-3 border-4 border-white shadow-lg bg-white">` : `<i class="fa-solid fa-user-graduate text-5xl text-blue-300 mb-3"></i>`;
 
             panel.innerHTML = `
-                <div class="flex justify-between items-center mb-6 pb-4 border-b">
-                    <h2 class="text-2xl font-black text-blue-900"><i class="fa-solid fa-graduation-cap text-blue-600 mr-2"></i> Reporte Anual en Línea</h2>
-                    <button onclick="window.imprimirReporteFamiliar()" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-500 text-sm font-bold no-print"><i class="fa-solid fa-print mr-2"></i>Descargar Boletín Oficial</button>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b">
+                    <h2 class="text-xl sm:text-2xl font-black text-blue-900"><i class="fa-solid fa-graduation-cap text-blue-600 mr-2"></i> Reporte Anual en Línea</h2>
+                    <button onclick="window.imprimirReporteFamiliar()" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-500 text-sm font-bold no-print w-full sm:w-auto"><i class="fa-solid fa-print mr-2"></i>Descargar Boletín Oficial</button>
                 </div>
 
-                <div class="flex gap-6 mb-6">
-                    <div class="w-1/3 bg-blue-50 border border-blue-200 rounded-xl p-5 shadow-sm text-center relative overflow-hidden">
+                <div class="flex flex-col md:flex-row gap-6 mb-6">
+                    <div class="w-full md:w-1/3 bg-blue-50 border border-blue-200 rounded-xl p-5 shadow-sm text-center relative overflow-hidden">
                         <div class="absolute inset-0 bg-blue-600 h-24 z-0"></div>
                         <div class="relative z-10 pt-4">
                             ${avatarPadre}
                             <h3 class="font-bold text-lg text-blue-900">${nombre}</h3>
                             <p class="text-sm text-blue-600 font-medium mb-4">Grado ${grado}°</p>
                             <div class="bg-white p-3 rounded-lg border shadow-sm">
-                                <p class="text-[10px] font-bold text-gray-500 uppercase">Promedio Anual General</p>
+                                <p class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase">Promedio Anual General</p>
                                 <p class="text-3xl font-black text-gray-800">${promedioGeneral}</p>
                                 <p class="text-sm font-bold ${desGeneral.color} mt-1">${desGeneral.texto}</p>
                             </div>
                         </div>
                     </div>
-                    <div class="w-2/3 bg-white border rounded-xl p-4 shadow-sm">
-                        <canvas id="padre-grafico" class="w-full max-h-64"></canvas>
+                    <div class="w-full md:w-2/3 bg-white border rounded-xl p-4 shadow-sm min-h-[250px]">
+                        <canvas id="padre-grafico" class="w-full h-full max-h-64"></canvas>
                     </div>
                 </div>
 
                 <h3 class="font-bold text-gray-700 mb-3"><i class="fa-solid fa-list-check text-blue-500 mr-2"></i> Consolidado por Materias</h3>
-                <table class="w-full text-sm border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                    <thead class="bg-blue-800 text-white">
-                        <tr>
-                            <th class="p-3 text-left">Asignatura</th>
-                            <th class="p-3 text-center">P1</th><th class="p-3 text-center">P2</th><th class="p-3 text-center">P3</th><th class="p-3 text-center">P4</th>
-                            <th class="p-3 text-center bg-blue-900">Final</th><th class="p-3 text-center">Nivel</th>
-                        </tr>
-                    </thead>
-                    <tbody>${filasAsignaturas}</tbody>
-                </table>
+                <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
+                    <table class="w-full text-xs sm:text-sm min-w-[600px]">
+                        <thead class="bg-blue-800 text-white">
+                            <tr>
+                                <th class="p-3 text-left">Asignatura</th>
+                                <th class="p-3 text-center w-12 sm:w-16">P1</th><th class="p-3 text-center w-12 sm:w-16">P2</th><th class="p-3 text-center w-12 sm:w-16">P3</th><th class="p-3 text-center w-12 sm:w-16">P4</th>
+                                <th class="p-3 text-center bg-blue-900 w-16 sm:w-20">Final</th><th class="p-3 text-center w-20 sm:w-24">Nivel</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filasAsignaturas}</tbody>
+                    </table>
+                </div>
             `;
 
             if(chartInstance) chartInstance.destroy();
@@ -1582,7 +1595,7 @@
                             let val = asigData.grados[grado].dba[periodoReporte];
                             dbaHTML = (val && val !== "[object Object]") ? val : "<span style='color:#9ca3af; font-style:italic;'>Sin indicador registrado.</span>";
                         }
-
+                        
                         let ihsAsig = asigData.ihs || 2;
                         
                         sumaDefinitivas += parseFloat(promedios.def);
@@ -1928,16 +1941,12 @@
                     let datosExtraidos = data.masterDB ? data.masterDB : (data.grados ? { "Ciencias Naturales": data } : data);
                     delete datosExtraidos["masterDB"]; delete datosExtraidos["asignaturaActiva"]; delete datosExtraidos["logo"];
                     
-                    let asigModificada = false;
-                    let asignaturasAMigrar = new Set();
-
-                    // Asegurar migración de viejos formatos sin bucles
                     for(let asig in datosExtraidos) {
                         if(!datosExtraidos[asig].propietario && typeof user !== 'undefined' && user) {
                             datosExtraidos[asig].propietario = user.uid;
                             datosExtraidos[asig].propietarioNombre = user.email;
                         }
-                        if(!datosExtraidos[asig].ihs) datosExtraidos[asig].ihs = 2; // IHS por defecto
+                        if(!datosExtraidos[asig].ihs) datosExtraidos[asig].ihs = 2;
 
                         for(let g=1; g<=5; g++) {
                             let grado = datosExtraidos[asig].grados[g];
