@@ -150,8 +150,6 @@
     </nav>
 
     <div class="max-w-7xl mx-auto p-4 flex flex-col lg:flex-row gap-6 no-print">
-        
-        <!-- Panel Izquierdo (Responsive width) -->
         <div class="w-full lg:w-1/3 space-y-4" id="panel-izquierdo">
             <div class="bg-white p-4 sm:p-5 rounded-lg shadow-sm border border-gray-200">
                 
@@ -235,13 +233,12 @@
             </div>
         </div>
 
-        <!-- Panel Derecho (Responsive width) -->
         <div id="panel-derecho" class="w-full lg:w-2/3 bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200 print-container relative min-h-screen">
             <div class="text-center text-gray-400 py-20 sm:py-32" id="mensaje-vacio">
                 <i class="fa-solid fa-arrow-left text-4xl sm:text-5xl mb-4 text-gray-300 animate-pulse hidden lg:inline-block"></i>
                 <i class="fa-solid fa-arrow-up text-4xl sm:text-5xl mb-4 text-gray-300 animate-pulse lg:hidden"></i>
                 <p class="text-base sm:text-lg font-bold">Selecciona un estudiante o mira las estadísticas.</p>
-                <p class="text-xs sm:text-sm mt-2 font-medium text-blue-500">Versión 2.0.4 - SIEE Profesional</p>
+                <p class="text-xs sm:text-sm mt-2 font-medium text-blue-500">Versión 2.0.7 - SIEE Profesional</p>
             </div>
             <div id="contenido-dinamico" class="hidden w-full"></div>
         </div>
@@ -252,9 +249,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Credenciales oficiales CVS
         const firebaseConfig = {
             apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
@@ -274,7 +270,6 @@
         window.appState = null;
         window.esPropietario = true;
         
-        // V2.0.1: Sistema de Periodos Activos (Inicia en 3)
         window.periodoActivo = "3"; 
         
         window.estudianteActivo = null;
@@ -290,8 +285,8 @@
         window.focoValor = null;
 
         document.addEventListener('focusin', (e) => {
-            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-                window.focoActivoId = e.target.id;
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+                window.focoActivoId = e.target.id || e.target.className; // Captura ID o clase para campos masivos
                 window.focoValor = e.target.value;
             }
         });
@@ -300,7 +295,7 @@
             window.focoValor = null;
         });
         document.addEventListener('input', (e) => {
-            if (e.target.id === window.focoActivoId) {
+            if (window.focoActivoId && (e.target.id === window.focoActivoId || e.target.className === window.focoActivoId)) {
                 window.focoValor = e.target.value;
             }
         });
@@ -468,7 +463,7 @@
             signInAnonymously(auth).catch((error) => {
                 document.getElementById('padre-btn').innerText = "Consultar Notas";
                 document.getElementById('padre-btn').disabled = false;
-                document.getElementById('padre-error').innerText = "Hubo un error de conexión con la cuenta de Acudiente. Habilita 'Anónimo' en Firebase: " + error.code;
+                document.getElementById('padre-error').innerText = "Hubo un error de conexión. Verifica la configuración de Firebase: " + error.code;
                 document.getElementById('padre-error').classList.remove('hidden');
             });
         };
@@ -549,6 +544,7 @@
                                     });
                                 }
                             }
+                            // SOLO repara si faltaba estructura base. Previene bucle infinito.
                             if(asigModificada) asignaturasAMigrar.add(asig);
                         }
 
@@ -587,22 +583,13 @@
                         }
                         
                         window.verificarPropiedad();
-                        
-                        // Guarda SOLO las materias que necesitaban reparación (Cero bucles infinitos)
-                        if(asignaturasAMigrar.size > 0) {
-                            asignaturasAMigrar.forEach(asig => {
-                                const esDueno = window.masterDB[asig].propietario === user.uid || (user.email && user.email.toLowerCase() === "josecreadig@gmail.com");
-                                if(esDueno) window.guardarEnNube(asig);
-                            });
-                        }
-
                         window.actualizarUIComun();
 
                         // RESTAURADOR DE FOCO ANTI-BORRADO
                         if (window.focoActivoId) {
                             setTimeout(() => {
-                                const elToFocus = document.getElementById(window.focoActivoId);
-                                if (elToFocus) {
+                                const elToFocus = document.getElementById(window.focoActivoId) || document.querySelector(`.${window.focoActivoId}`);
+                                if (elToFocus && window.focoValor !== null) {
                                     elToFocus.value = window.focoValor;
                                     elToFocus.focus();
                                 }
@@ -613,7 +600,7 @@
                         setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
                     }
                 }, (error) => {
-                    console.log("Aviso de Nube silenciado para prevenir congelamiento.", error);
+                    console.log("Aviso de Nube silenciado.", error);
                 });
 
             } catch(e) { window.customAlert("Error crítico al conectar."); }
@@ -769,7 +756,7 @@
                 
                 try {
                     await window.guardarEnNube(nombre);
-                    window.showToast("Materia creada. Tienes el control total.", "success");
+                    window.showToast("Materia creada exitosamente.", "success");
                 } catch(e) {}
             });
         };
@@ -784,19 +771,20 @@
                 
                 try {
                     const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
-                    await deleteDoc(viejaRef); // Borra primero el zombie en la nube
+                    const docSnap = await getDoc(viejaRef);
+                    if(docSnap.exists()) await deleteDoc(viejaRef); 
                     
                     window.masterDB[nuevoNombre] = JSON.parse(JSON.stringify(window.masterDB[viejaAsig]));
-                    delete window.masterDB[viejaAsig]; // Borra el zombie en la pantalla
+                    delete window.masterDB[viejaAsig]; 
                     
                     window.asignaturaActiva = nuevoNombre;
                     window.appState = window.masterDB[nuevoNombre];
                     window.actualizarUIComun();
                     
-                    await window.guardarEnNube(nuevoNombre); // Guarda el nuevo nombre
+                    await window.guardarEnNube(nuevoNombre);
                     window.showToast("Asignatura renombrada exitosamente", "success");
                 } catch(e) {
-                    window.customAlert("Error: Firebase rechazó el cambio. Es posible que no seas el propietario.");
+                    window.customAlert("Error: Firebase rechazó el cambio. Es posible que no tengas permisos.");
                 }
             });
         };
@@ -810,16 +798,16 @@
                 
                 try {
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
-                    await deleteDoc(docRef); // Borra primero en la nube
+                    await deleteDoc(docRef);
                     
-                    delete window.masterDB[asigABorrar]; // Borra en pantalla
+                    delete window.masterDB[asigABorrar];
                     window.asignaturaActiva = Object.keys(window.masterDB)[0];
                     window.appState = window.masterDB[window.asignaturaActiva];
                     
                     window.actualizarUIComun();
                     window.showToast("Asignatura eliminada con éxito", "success");
                 } catch(e) {
-                    window.customAlert("Error: Firebase denegó la eliminación. Solo el creador de la materia puede borrarla.");
+                    window.customAlert("Error: Firebase denegó la eliminación. Solo el creador original o el Administrador puede borrarla.");
                 }
             });
         };
@@ -843,7 +831,7 @@
 
         window.aplicarLogoUI = () => {
             const navLogo = document.getElementById('nav-logo');
-            if (window.masterDB[Object.keys(window.masterDB)[0]] && window.masterDB[Object.keys(window.masterDB)[0]].logo) {
+            if (window.masterDB && window.masterDB[Object.keys(window.masterDB)[0]] && window.masterDB[Object.keys(window.masterDB)[0]].logo) {
                 navLogo.src = window.masterDB[Object.keys(window.masterDB)[0]].logo;
                 navLogo.classList.remove('hidden');
             } else { navLogo.classList.add('hidden'); }
@@ -1066,7 +1054,7 @@
                         </div>
                     </div>
                     <div class="flex flex-wrap justify-center sm:justify-end gap-2 w-full md:w-auto">
-                        <button onclick="window.imprimirObservador('${est.id}')" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded shadow transition text-xs sm:text-sm font-bold flex items-center justify-center gap-2 flex-1 sm:flex-none" title="Imprimir Observador"><i class="fa-solid fa-book-open-reader"></i> Observador</button>
+                        <button onclick="window.imprimirObservador('${est.id}')" class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded shadow transition text-xs sm:text-sm font-bold flex items-center justify-center gap-2 flex-1 sm:flex-none" title="Imprimir Observador"><i class="fa-solid fa-book-open-reader"></i> Observador</button>
                         <button onclick="window.imprimirBoletinEstudiante('${est.id}')" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded shadow transition text-xs sm:text-sm font-bold flex items-center justify-center gap-2 flex-1 sm:flex-none" title="Imprimir Boletín Oficial"><i class="fa-solid fa-print"></i> Boletín</button>
                         ${window.esPropietario ? `<button onclick="window.eliminarEstudiante()" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-2 rounded shadow transition text-sm flex items-center justify-center" title="Eliminar Estudiante"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </div>
@@ -1456,6 +1444,8 @@
             
             document.getElementById('nav-subtitle').innerHTML = `Portal Familiar - Estudiante: <b class="text-yellow-300">${window.datosPadre.nombre}</b>`;
             document.getElementById('logo-hover-icon').classList.add('hidden');
+            
+            window.aplicarLogoUI(); // Activa el logo en la barra superior para los padres
 
             const panel = document.getElementById('contenido-dinamico');
             panel.classList.remove('hidden');
@@ -1508,7 +1498,10 @@
             panel.innerHTML = `
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b">
                     <h2 class="text-xl sm:text-2xl font-black text-blue-900"><i class="fa-solid fa-graduation-cap text-blue-600 mr-2"></i> Reporte Anual en Línea</h2>
-                    <button onclick="window.imprimirReporteFamiliar()" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-500 text-sm font-bold no-print w-full sm:w-auto"><i class="fa-solid fa-print mr-2"></i>Descargar Boletín Oficial</button>
+                    <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <button onclick="window.imprimirObservadorFamiliar()" class="bg-gray-800 text-white px-4 py-2 rounded shadow hover:bg-gray-700 text-sm font-bold no-print w-full sm:w-auto"><i class="fa-solid fa-book-open-reader mr-2"></i>Ver Observador</button>
+                        <button onclick="window.imprimirReporteFamiliar()" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-500 text-sm font-bold no-print w-full sm:w-auto"><i class="fa-solid fa-print mr-2"></i>Descargar Boletín Oficial</button>
+                    </div>
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-6 mb-6">
@@ -1798,6 +1791,24 @@
             }, 500);
         };
 
+        window.imprimirObservadorFamiliar = () => {
+            let estNombre = window.datosPadre.nombre;
+            let grado = window.datosPadre.grado;
+            
+            let style = document.createElement('style');
+            style.innerHTML = `@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`;
+            document.head.appendChild(style);
+
+            let htmlFinal = window.obtenerHTMLObservador(estNombre, window.datosPadre.pin, grado);
+            document.getElementById('vista-impresion').innerHTML = htmlFinal;
+            
+            setTimeout(() => { 
+                window.print(); 
+                document.getElementById('vista-impresion').innerHTML = ''; 
+                document.head.removeChild(style);
+            }, 500);
+        };
+
         window.imprimirBoletinEstudiante = (idEstudiante) => {
             let est = window.appState.grados[window.appState.gradoActivo].estudiantes.find(e => e.id === idEstudiante);
             if(!est) return;
@@ -1992,10 +2003,10 @@
                 for(let asig in window.masterDB) {
                     for(let g=1; g<=5; g++) {
                         let grado = window.masterDB[asig].grados[g];
-                        if(grado.dba && grado.dba["1"] && grado.dba["1"] !== "[object Object]") { grado.dba["3"] = grado.dba["1"]; grado.dba["1"] = ""; hizoCambios = true; }
+                        if(grado.dba && grado.dba["1"]) { grado.dba["3"] = grado.dba["1"]; grado.dba["1"] = ""; hizoCambios = true; }
                         if(grado.estudiantes) {
                             grado.estudiantes.forEach(est => {
-                                if(est.observacion && est.observacion["1"] && est.observacion["1"] !== "[object Object]") { est.observacion["3"] = est.observacion["1"]; est.observacion["1"] = ""; hizoCambios = true; }
+                                if(est.observacion && est.observacion["1"]) { est.observacion["3"] = est.observacion["1"]; est.observacion["1"] = ""; hizoCambios = true; }
                                 est.notas.forEach(n => {
                                     if(n.periodo === 1 || n.periodo === "1") { n.periodo = 3; hizoCambios = true; }
                                 });
