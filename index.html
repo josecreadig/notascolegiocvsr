@@ -12,13 +12,21 @@
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         
         @media print {
-            body { background-color: white; }
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            .print-container { width: 100%; margin: 0; padding: 0; box-shadow: none; border: none; }
-            body.print-portrait { margin: 0; }
-            body.print-portrait @page { size: letter portrait; margin: 1.5cm; }
-            body.print-landscape { margin: 0; }
+            body { 
+                background-color: white !important; 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important; 
+            }
+            body > *:not(#vista-impresion) { display: none !important; }
+            #vista-impresion { 
+                display: block !important; 
+                width: 100% !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                box-shadow: none !important;
+                border: none !important;
+            }
+            body.print-portrait @page { size: letter portrait; margin: 1cm; }
             body.print-landscape @page { size: letter landscape; margin: 1cm; }
             textarea { border: none !important; resize: none !important; }
         }
@@ -39,7 +47,7 @@
     <div id="custom-modal" class="fixed inset-0 z-50 hidden opacity-0 pointer-events-none modal-overlay no-print">
         <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div id="modal-box" class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform scale-95 modal-box">
+            <div id="modal-box" class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform scale-95 modal-box relative z-10">
                 <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2" id="modal-title"><i class="fa-solid fa-bell text-blue-500"></i> Atención</h3>
                 <p class="text-sm text-gray-600 mb-4" id="modal-msg"></p>
                 <input type="text" id="modal-input" class="w-full border border-gray-300 rounded p-2 mb-4 hidden focus:border-blue-500 outline-none text-sm font-medium">
@@ -164,7 +172,7 @@
                             <option value="2">Periodo 2</option>
                             <option value="3">Periodo 3</option>
                             <option value="4">Periodo 4</option>
-                            <option value="final">🛡️ Informe Anual</option>
+                            <option value="final">🛡️ Acumulado Anual</option>
                         </select>
                     </div>
                 </div>
@@ -186,7 +194,7 @@
                         <i class="fa-solid fa-file-excel mr-1"></i> Exportar a Excel
                     </button>
                     <button onclick="window.printBoletinGeneral()" class="bg-purple-700 hover:bg-purple-600 text-white p-2 rounded text-sm font-bold transition col-span-2 shadow-sm mt-1">
-                        <i class="fa-solid fa-award mr-1"></i> Generar Boletín General
+                        <i class="fa-solid fa-award mr-1"></i> Generar Boletín Oficial
                     </button>
                 </div>
             </div>
@@ -202,38 +210,35 @@
             <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 no-print" id="panel-bd">
                 <h3 class="font-bold text-sm text-gray-700 mb-3"><i class="fa-solid fa-shield-halved text-blue-500 mr-1"></i> Base de Datos</h3>
                 <div class="flex gap-2">
-                    <button onclick="window.respaldarJSON()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Respaldar">
-                        <i class="fa-solid fa-download"></i>
+                    <button onclick="window.respaldarJSON()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Respaldar (Guardar en PC)">
+                        <i class="fa-solid fa-download"></i> Respaldar
                     </button>
-                    <button onclick="document.getElementById('restaurar-upload').value = ''; document.getElementById('restaurar-upload').click()" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Restaurar">
-                        <i class="fa-solid fa-upload"></i>
-                    </button>
-                    <button onclick="window.moverAPeriodo3()" class="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Mover notas del Periodo 1 al 3">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> A P3
+                    <button onclick="document.getElementById('restaurar-upload').value = ''; document.getElementById('restaurar-upload').click()" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 p-2 rounded text-xs font-bold transition shadow-sm" title="Restaurar (Subir backup)">
+                        <i class="fa-solid fa-upload"></i> Restaurar
                     </button>
                     <input type="file" id="restaurar-upload" class="hidden" accept=".json" onchange="window.restaurarJSON(event)">
                 </div>
             </div>
         </div>
 
-        <div id="panel-derecho" class="w-2/3 bg-white p-6 rounded-lg shadow-sm border border-gray-200 print-container relative min-h-screen">
+        <div id="panel-derecho" class="w-2/3 bg-white p-6 rounded-lg shadow-sm border border-gray-200 relative min-h-screen">
             <div class="text-center text-gray-400 py-32" id="mensaje-vacio">
                 <i class="fa-solid fa-arrow-left text-5xl mb-4 text-gray-300 animate-pulse"></i>
                 <p class="text-lg font-bold">Selecciona un estudiante o mira las estadísticas.</p>
-                <p class="text-sm mt-2 font-medium text-blue-500">Versión 2.0.1 - 4 Periodos, Fotos y Portal Familiar</p>
+                <p class="text-sm mt-2 font-medium text-blue-500">Versión 2.0.2 - Formato CVS Original</p>
             </div>
             <div id="contenido-dinamico" class="hidden w-full"></div>
         </div>
     </div>
 
-    <div id="vista-impresion" class="print-only print-container"></div>
+    <div id="vista-impresion" class="print-only"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CREDENCIALES ARREGLADAS
+        // Credenciales oficiales CVS
         const firebaseConfig = {
             apiKey: "AIzaSyCveuu1973b4jBjpYgPEw4FQ8ZqWTZKvjs",
             authDomain: "cuaderno-del-docente-3f438.firebaseapp.com",
@@ -253,7 +258,7 @@
         window.appState = null;
         window.esPropietario = true;
         
-        window.periodoActivo = "3";
+        window.periodoActivo = "3"; // Arranca en periodo 3
         
         window.estudianteActivo = null;
         window.notaEnEdicion = null;
@@ -271,6 +276,7 @@
         const btnCancel = document.getElementById('modal-btn-cancel');
         const btnConfirm = document.getElementById('modal-btn-confirm');
         
+        // Modales 100% visibles y desbugeados
         window.cerrarModal = () => {
             modalEl.classList.remove('opacity-100', 'pointer-events-auto');
             modalEl.classList.add('opacity-0', 'pointer-events-none');
@@ -388,9 +394,9 @@
                 btn.disabled = false;
                 let mensaje = "Error de conexión.";
                 if(error.code === 'auth/invalid-credential') mensaje = "Correo o contraseña incorrectos.";
-                else if(error.code === 'auth/user-not-found') mensaje = "Este correo no está registrado en el colegio.";
+                else if(error.code === 'auth/user-not-found') mensaje = "Este correo no está registrado.";
                 else if(error.code === 'auth/wrong-password') mensaje = "Contraseña incorrecta.";
-                else mensaje = "No se pudo iniciar sesión. Verifica Firebase: " + error.code;
+                else mensaje = "Revisa consola: " + error.code;
                 
                 errorMsg.innerText = mensaje;
                 errorMsg.classList.remove('hidden');
@@ -412,7 +418,7 @@
             signInAnonymously(auth).catch((error) => {
                 document.getElementById('padre-btn').innerText = "Consultar Notas";
                 document.getElementById('padre-btn').disabled = false;
-                document.getElementById('padre-error').innerText = "Error de acceso: Asegúrate de habilitar 'Anónimo' en Firebase (Authentication > Sign-in method).";
+                document.getElementById('padre-error').innerText = "El colegio aún no ha activado el acceso familiar (Falta encender 'Anónimo' en Firebase).";
                 document.getElementById('padre-error').classList.remove('hidden');
             });
         };
@@ -420,16 +426,11 @@
         window.cerrarSesion = async () => {
             window.customConfirm("¿Seguro que deseas salir de forma segura?", async () => {
                 try {
-                    if (window.unsubNube) {
-                        window.unsubNube();
-                        window.unsubNube = null;
-                    }
+                    if (window.unsubNube) { window.unsubNube(); window.unsubNube = null; }
                     isSyncing = false;
-                    
                     document.getElementById('load-icon').className = "fa-solid fa-door-open text-5xl text-blue-500 mb-4 animate-pulse";
                     document.getElementById('load-text').innerText = "Cerrando sesión segura...";
                     document.getElementById('loading-screen').classList.remove('hidden', 'opacity-0');
-                    
                     await signOut(auth);
                 } catch(error) {
                     console.log("Salida forzada:", error);
@@ -457,44 +458,42 @@
                     
                     if(Object.keys(nuevasAsig).length > 0) {
                         window.masterDB = nuevasAsig;
+                        let asignaturasAMigrar = new Set();
                         
-                        // PARCHE V2: Reparación silenciosa EN MEMORIA para evitar bucles infinitos en Firebase
+                        // PARCHE V2.0.1: Repara pero NUNCA guarda por su cuenta en bucle
                         for(let asig in window.masterDB) {
-                            if(logoGlobal && !window.masterDB[asig].logo) { window.masterDB[asig].logo = logoGlobal; }
+                            let asigModificada = false;
+                            if(logoGlobal && !window.masterDB[asig].logo) { window.masterDB[asig].logo = logoGlobal; asigModificada = true; }
                             
                             for(let g=1; g<=5; g++) {
                                 let grado = window.masterDB[asig].grados[g];
                                 
                                 if(typeof grado.dba === 'string') {
-                                    if(grado.dba === "[object Object]") {
-                                        grado.dba = { "1": "", "2": "", "3": "", "4": "" };
-                                    } else {
-                                        grado.dba = { "1": grado.dba, "2": "", "3": "", "4": "" };
-                                    }
+                                    if(grado.dba === "[object Object]") grado.dba = { "1": "", "2": "", "3": "", "4": "" };
+                                    else grado.dba = { "1": grado.dba, "2": "", "3": "", "4": "" };
+                                    asigModificada = true;
                                 }
 
                                 if(grado.estudiantes) {
                                     grado.estudiantes.forEach(est => {
-                                        if(!est.pin) { est.pin = Math.floor(1000 + Math.random() * 9000).toString(); }
+                                        if(!est.pin) { est.pin = Math.floor(1000 + Math.random() * 9000).toString(); asigModificada = true; }
                                         
                                         if(typeof est.observacion === 'string') {
-                                            if(est.observacion === "[object Object]") {
-                                                est.observacion = { "1": "", "2": "", "3": "", "4": "" };
-                                            } else {
-                                                est.observacion = { "1": est.observacion, "2": "", "3": "", "4": "" };
-                                            }
+                                            if(est.observacion === "[object Object]") est.observacion = { "1": "", "2": "", "3": "", "4": "" };
+                                            else est.observacion = { "1": est.observacion, "2": "", "3": "", "4": "" };
+                                            asigModificada = true;
                                         }
 
                                         est.notas.forEach(n => {
-                                            if(!n.periodo) {
-                                                n.periodo = 1;
-                                            }
+                                            if(!n.periodo) { n.periodo = 1; asigModificada = true; }
                                         });
                                     });
                                 }
                             }
+                            if(asigModificada) asignaturasAMigrar.add(asig);
                         }
 
+                        // Modo Familiar interceptado
                         if (user.isAnonymous && window.datosPadre) {
                             window.modoPadre = true;
                             let encontroHijo = false;
@@ -530,6 +529,15 @@
                         }
                         
                         window.verificarPropiedad();
+                        
+                        // Guardado seguro (solo repara lo estrictamente necesario sin bucles)
+                        if(asignaturasAMigrar.size > 0) {
+                            asignaturasAMigrar.forEach(asig => {
+                                const esDueno = window.masterDB[asig].propietario === user.uid || (user.email && user.email.toLowerCase() === "josecreadig@gmail.com");
+                                if(esDueno) window.guardarEnNube(asig);
+                            });
+                        }
+
                         window.actualizarUIComun();
                         document.getElementById('loading-screen').classList.add('opacity-0');
                         setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
@@ -571,11 +579,8 @@
             if(!user || !db || window.modoPadre) return;
             const targetAsig = asigEspecifica || window.asignaturaActiva;
             const asigRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', targetAsig);
-            try {
-                await setDoc(asigRef, window.masterDB[targetAsig]);
-            } catch(e) {
-                console.log("Error silencioso evitado:", e);
-            }
+            try { await setDoc(asigRef, window.masterDB[targetAsig]); } 
+            catch(e) { console.log("Permiso denegado silenciado"); }
         };
 
         window.actualizarUIComun = () => {
@@ -684,7 +689,6 @@
             });
         };
 
-        // RESOLUCIÓN DE RECREACIÓN DE ZOMBIES - Primero borra en Base de datos, luego en memoria local.
         window.renombrarAsignatura = () => {
             window.customPrompt(`Renombrar '${window.asignaturaActiva}' a:`, window.asignaturaActiva, async (nuevoNombre) => {
                 nuevoNombre = nuevoNombre.trim();
@@ -694,11 +698,11 @@
                 const viejaAsig = window.asignaturaActiva;
                 
                 try {
-                    // MATA AL ZOMBIE en la base de datos PRIMERO
+                    // MATA AL ZOMBIE en la nube primero
                     const viejaRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', viejaAsig);
                     await deleteDoc(viejaRef);
                     
-                    // Solo si la nube lo permitió, lo clona y elimina localmente
+                    // Solo si lo borró, clona localmente y sube la nueva
                     window.masterDB[nuevoNombre] = JSON.parse(JSON.stringify(window.masterDB[viejaAsig]));
                     delete window.masterDB[viejaAsig];
                     
@@ -714,7 +718,6 @@
             });
         };
 
-        // RESOLUCIÓN DE ZOMBIES - Primero borra en Base de datos
         window.eliminarAsignatura = () => {
             let keys = Object.keys(window.masterDB);
             if(keys.length === 1) return window.customAlert("No puedes eliminar la única asignatura que tienes.");
@@ -723,11 +726,11 @@
                 const asigABorrar = window.asignaturaActiva;
                 
                 try {
-                    // Intenta matar al Zombie en la nube primero
+                    // Elimina en la nube primero
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'asignaturas', asigABorrar);
                     await deleteDoc(docRef);
                     
-                    // Si Firebase dio permiso, lo eliminamos de la memoria de la pantalla
+                    // Elimina de pantalla
                     delete window.masterDB[asigABorrar];
                     window.asignaturaActiva = Object.keys(window.masterDB)[0];
                     window.appState = window.masterDB[window.asignaturaActiva];
@@ -735,8 +738,7 @@
                     
                     window.showToast("Asignatura eliminada con éxito", "success");
                 } catch(e) {
-                    window.customAlert("Error de seguridad: Las Reglas de Firebase rechazaron la eliminación porque no eres el creador original de esta materia.");
-                    console.log("Error al borrar (Rechazado por el servidor)", e);
+                    window.customAlert("Error de seguridad: Las Reglas de Firebase rechazaron la eliminación porque no eres el creador de esta materia.");
                 }
             });
         };
@@ -769,7 +771,6 @@
         window.procesarFotoEstudiante = (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            
             if(!window.esPropietario) return window.customAlert("Solo el titular de la materia puede cambiar la foto.");
 
             const reader = new FileReader();
@@ -800,7 +801,7 @@
                         window.guardarEnNube();
                         window.renderVistaIndividual();
                         window.renderListaEstudiantes();
-                        window.showToast("Foto comprimida y guardada exitosamente", "success");
+                        window.showToast("Foto guardada exitosamente", "success");
                     }
                 }
                 img.src = e.target.result;
@@ -1025,13 +1026,8 @@
                     type: 'bar',
                     data: {
                         labels: ['Periodo 1', 'Periodo 2', 'Periodo 3', 'Periodo 4'],
-                        datasets: [{
-                            label: 'Nota Definitiva',
-                            data: [p.p1, p.p2, p.p3, p.p4],
-                            backgroundColor: '#3b82f6', borderRadius: 4
-                        }]
+                        datasets: [{ label: 'Nota Definitiva', data: [p.p1, p.p2, p.p3, p.p4], backgroundColor: '#3b82f6', borderRadius: 4 }]
                     },
-                    // Animaciones apagadas
                     options: { animation: false, scales: { y: { min: 0, max: 5 } }, plugins: { legend: { display: false } } }
                 });
 
@@ -1148,13 +1144,8 @@
                     type: 'radar',
                     data: {
                         labels: ['Compromiso', 'Participación', 'Actitud', 'Examen'],
-                        datasets: [{
-                            label: 'Desempeño',
-                            data: [p.comp, p.part, p.act, p.exa],
-                            backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', pointBackgroundColor: 'rgba(59, 130, 246, 1)', borderWidth: 2
-                        }]
+                        datasets: [{ label: 'Desempeño', data: [p.comp, p.part, p.act, p.exa], backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', pointBackgroundColor: 'rgba(59, 130, 246, 1)', borderWidth: 2 }]
                     },
-                    // Animaciones apagadas
                     options: { animation: false, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
                 });
             }
@@ -1220,9 +1211,7 @@
         };
 
         window.showMassiveView = () => {
-            if (window.periodoActivo === 'final') {
-                return window.customAlert("No puedes usar la calificación rápida en modo Acumulado Anual.");
-            }
+            if (window.periodoActivo === 'final') return window.customAlert("No puedes usar calificación rápida en Acumulado Anual.");
             
             window.estudianteActivo = null;
             document.getElementById('mensaje-vacio').classList.add('hidden');
@@ -1343,13 +1332,8 @@
                 type: 'bar',
                 data: {
                     labels: ['Superior', 'Alto', 'Básico', 'Bajo', 'Sin Evaluar'],
-                    datasets: [{
-                        label: 'Estudiantes',
-                        data: [conteo.superior, conteo.alto, conteo.basico, conteo.bajo, conteo.sin],
-                        backgroundColor: ['#9333ea', '#16a34a', '#ca8a04', '#dc2626', '#9ca3af'], borderRadius: 4
-                    }]
+                    datasets: [{ label: 'Estudiantes', data: [conteo.superior, conteo.alto, conteo.basico, conteo.bajo, conteo.sin], backgroundColor: ['#9333ea', '#16a34a', '#ca8a04', '#dc2626', '#9ca3af'], borderRadius: 4 }]
                 },
-                // Animaciones apagadas
                 options: { animation: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
             });
         };
@@ -1394,10 +1378,10 @@
                         filasAsignaturas += `
                             <tr class="border-b hover:bg-gray-50 transition">
                                 <td class="p-3 bg-gray-50 font-bold text-gray-800">${asigNombre}</td>
-                                <td class="p-3 text-center text-gray-600">${promedios.p1>0?promedios.p1:'-'}</td>
-                                <td class="p-3 text-center text-gray-600">${promedios.p2>0?promedios.p2:'-'}</td>
-                                <td class="p-3 text-center text-gray-600">${promedios.p3>0?promedios.p3:'-'}</td>
-                                <td class="p-3 text-center text-gray-600">${promedios.p4>0?promedios.p4:'-'}</td>
+                                <td class="p-3 text-center text-gray-600 font-bold">${promedios.p1>0?promedios.p1:'-'}</td>
+                                <td class="p-3 text-center text-gray-600 font-bold">${promedios.p2>0?promedios.p2:'-'}</td>
+                                <td class="p-3 text-center text-gray-600 font-bold">${promedios.p3>0?promedios.p3:'-'}</td>
+                                <td class="p-3 text-center text-gray-600 font-bold">${promedios.p4>0?promedios.p4:'-'}</td>
                                 <td class="p-3 text-center text-lg font-black text-gray-800 bg-blue-50">${promedios.def}</td>
                                 <td class="p-3 text-center font-bold ${des.color}">${des.texto}</td>
                             </tr>
@@ -1414,7 +1398,7 @@
             panel.innerHTML = `
                 <div class="flex justify-between items-center mb-6 pb-4 border-b">
                     <h2 class="text-2xl font-black text-blue-900"><i class="fa-solid fa-graduation-cap text-blue-600 mr-2"></i> Reporte Anual en Línea</h2>
-                    <button onclick="window.print()" class="bg-gray-800 text-white px-4 py-2 rounded shadow hover:bg-gray-700 text-sm font-bold no-print"><i class="fa-solid fa-print mr-2"></i>Imprimir Reporte</button>
+                    <button onclick="window.imprimirReporteFamiliar()" class="bg-gray-800 text-white px-4 py-2 rounded shadow hover:bg-gray-700 text-sm font-bold no-print"><i class="fa-solid fa-print mr-2"></i>Imprimir Boletín Oficial</button>
                 </div>
 
                 <div class="flex gap-6 mb-6">
@@ -1454,16 +1438,185 @@
                     labels: datosGrafico.materias,
                     datasets: [{ label: 'Nota Final', data: datosGrafico.notas, backgroundColor: 'rgba(16, 185, 129, 0.2)', borderColor: 'rgba(16, 185, 129, 1)', pointBackgroundColor: 'rgba(16, 185, 129, 1)', borderWidth: 2 }]
                 },
-                // Animaciones apagadas
                 options: { animation: false, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } }, maintainAspectRatio: false }
             });
         };
 
-        window.getHeaderImpresion = (titulo, subtitulo) => {
+        window.obtenerHTMLBoletin = (estNombre, estPIN, grado, periodoReporte) => {
+            let filasAsignaturas = "";
+            let sumaDefinitivas = 0;
+            let totalAsignaturas = 0;
+            let totalFallas = 0;
+
+            for(let asigNombre in window.masterDB) {
+                let asigData = window.masterDB[asigNombre];
+                if(asigData.grados && asigData.grados[grado]) {
+                    let estAsig = asigData.grados[grado].estudiantes.find(e => e.nombre.toLowerCase() === estNombre.toLowerCase());
+                    if(estAsig) {
+                        let promedios = window.calcularPromedios(estAsig.notas, 'final'); 
+                        
+                        let dbaHTML = "";
+                        if (periodoReporte === 'final') {
+                            let dbas = [];
+                            if(asigData.grados[grado].dba["1"]) dbas.push(`<b>P1:</b> ${asigData.grados[grado].dba["1"]}`);
+                            if(asigData.grados[grado].dba["2"]) dbas.push(`<b>P2:</b> ${asigData.grados[grado].dba["2"]}`);
+                            if(asigData.grados[grado].dba["3"]) dbas.push(`<b>P3:</b> ${asigData.grados[grado].dba["3"]}`);
+                            if(asigData.grados[grado].dba["4"]) dbas.push(`<b>P4:</b> ${asigData.grados[grado].dba["4"]}`);
+                            dbaHTML = dbas.length > 0 ? dbas.join("<br>") : "<span style='color:#9ca3af; font-style:italic;'>Sin indicadores registrados.</span>";
+                        } else {
+                            dbaHTML = asigData.grados[grado].dba[periodoReporte] || "<span style='color:#9ca3af; font-style:italic;'>Sin indicador registrado.</span>";
+                        }
+
+                        sumaDefinitivas += parseFloat(promedios.def);
+                        totalAsignaturas++;
+                        
+                        let fallasAcumuladas = 0;
+                        estAsig.notas.forEach(n => { if(!n.asistio) fallasAcumuladas++; });
+                        totalFallas += fallasAcumuladas;
+
+                        filasAsignaturas += `
+                            <tr>
+                                <td style="border:1px solid #475569; padding:6px; font-weight:bold; background-color:#e2e8f0; color:#0f172a; font-size:9px; text-transform:uppercase;">${asigNombre}</td>
+                                <td style="border:1px solid #475569; padding:6px; font-size:10px; text-align:justify; color:#1e293b;">${dbaHTML}</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b;">${promedios.p1>0?promedios.p1:''}</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b;">${promedios.p2>0?promedios.p2:''}</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b;">${promedios.p3>0?promedios.p3:''}</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b;">${promedios.p4>0?promedios.p4:''}</td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-size:13px; font-weight:900; background-color:#f1f5f9; color:#0f172a;">${promedios.def}</td>
+                            </tr>
+                        `;
+                    }
+                }
+            }
+
+            let promedioGeneral = totalAsignaturas > 0 ? (sumaDefinitivas / totalAsignaturas).toFixed(1) : "0.0";
+            let desGeneral = window.getDesempeno(promedioGeneral);
+            
+            let reco = "Continúa esforzándote en tu proceso académico.";
+            if (desGeneral.texto === "Superior") reco = "¡Felicitaciones por tu excelente nivel académico! Puedes seguir avanzando con la ayuda de Dios.";
+            else if (desGeneral.texto === "Alto") reco = "Buen trabajo. Mantén tu dedicación para alcanzar la excelencia.";
+            else if (desGeneral.texto === "Básico") reco = "Has alcanzado los logros básicos. Se recomienda mayor dedicación y repaso en casa.";
+            else if (desGeneral.texto === "Bajo") reco = "Presenta dificultades en su proceso. Es necesario un mayor acompañamiento y compromiso familiar.";
+
+            let logoDefault = window.masterDB[Object.keys(window.masterDB)[0]]?.logo || '';
+            let imgLogo = logoDefault ? `<img src="${logoDefault}" style="width:70px; height:70px; object-fit:contain;">` : `<div style="width:70px; height:70px; background:#1e3a8a; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:16px;">CVS</div>`;
+
+            return `
+                <div style="page-break-after: always; padding: 10px 20px; font-family: Arial, sans-serif; color: #000; background: white;">
+                    <div style="text-align: center; margin-bottom: 10px; position: relative;">
+                        <div style="position: absolute; left: 0; top: 0;">${imgLogo}</div>
+                        <div style="position: absolute; right: 0; top: 0;">${imgLogo}</div>
+                        <h1 style="font-size: 16px; margin: 0; font-weight: bold; color: #0f172a;">COLEGIO VIDA SANA REDENSIÓN</h1>
+                        <p style="font-size: 10px; margin: 2px 0; color: #334155;">Código del DANE No. 425290002398 aprobado MEN<br>Según Resolución 0007 del 15 de febrero de 2011<br>Finca Chicalá Vereda La Palma Teléfono 3202298188<br>Fusagasugá - Cundinamarca</p>
+                        <h2 style="font-size: 14px; margin: 8px 0 0 0; background: #e2e8f0; border: 1px solid #475569; padding: 4px; font-weight:bold;">INFORME PEDAGÓGICO - ${periodoReporte === 'final' ? 'ACUMULADO ANUAL' : 'PERIODO ' + periodoReporte}</h2>
+                    </div>
+
+                    <table style="width:100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; border: 1px solid #475569;">
+                        <tr>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:15%;">NOMBRE</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:55%;">${estNombre.toUpperCase()}</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:15%;">GRADO</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:15%; text-align:center;">${grado}°</td>
+                        </tr>
+                    </table>
+
+                    <table style="width:100%; border-collapse: collapse; font-size: 10px;">
+                        <thead>
+                            <tr style="background:#0ea5e9; color:white; font-weight:bold; text-align:center;">
+                                <th style="border:1px solid #475569; padding:6px; width:16%;">CAMPOS DE FORMACIÓN</th>
+                                <th style="border:1px solid #475569; padding:6px; width:48%;">INDICADORES DE DESEMPEÑO</th>
+                                <th style="border:1px solid #475569; padding:6px; width:7%;">PERIOD<br>O I</th>
+                                <th style="border:1px solid #475569; padding:6px; width:7%;">PERIOD<br>O II</th>
+                                <th style="border:1px solid #475569; padding:6px; width:7%;">PERIOD<br>O III</th>
+                                <th style="border:1px solid #475569; padding:6px; width:7%;">PERIOD<br>O IV</th>
+                                <th style="border:1px solid #475569; padding:6px; width:8%;">DEFINIT<br>IVA</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filasAsignaturas}</tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="2" style="border:1px solid #475569; padding:6px; text-align:right; font-weight:bold; background:#f1f5f9; color:#0f172a;">PROMEDIO GENERAL:</td>
+                                <td colspan="4" style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; background:#f1f5f9;"></td>
+                                <td style="border:1px solid #475569; padding:6px; text-align:center; font-size:14px; font-weight:bold; background:#e2e8f0; color:#0f172a;">${promedioGeneral}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <table style="width:100%; border-collapse: collapse; font-size: 11px; margin-top: 10px;">
+                        <tr>
+                            <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#e0f2fe; width:20%;">FALLAS</td>
+                            <td style="border:1px solid #475569; padding:6px; text-align:center; width:30%; font-weight:bold;">${totalFallas}</td>
+                            <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#e0f2fe; width:20%;">NIVEL DE DESEMPEÑO</td>
+                            <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; width:30%;">${desGeneral.texto.toUpperCase()}</td>
+                        </tr>
+                    </table>
+
+                    <div style="display:flex; margin-top:10px; gap:10px;">
+                        <table style="width:35%; border-collapse: collapse; font-size: 10px; border:1px solid #475569;">
+                            <tr><th colspan="3" style="border:1px solid #475569; background:#f1f5f9; padding:4px;">CRITERIOS DE EVALUACIÓN</th></tr>
+                            <tr><td style="border:1px solid #475569; padding:4px;">4.60 - 5.00</td><td style="border:1px solid #475569; padding:4px;">DESEMPEÑO SUPERIOR</td><td style="border:1px solid #475569; padding:4px; font-weight:bold;">D.S</td></tr>
+                            <tr><td style="border:1px solid #475569; padding:4px; background:#e0f2fe;">4.00 - 4.59</td><td style="border:1px solid #475569; padding:4px; background:#e0f2fe;">DESEMPEÑO ALTO</td><td style="border:1px solid #475569; padding:4px; background:#e0f2fe; font-weight:bold;">D.A</td></tr>
+                            <tr><td style="border:1px solid #475569; padding:4px;">3.00 - 3.99</td><td style="border:1px solid #475569; padding:4px;">DESEMPEÑO BÁSICO</td><td style="border:1px solid #475569; padding:4px; font-weight:bold;">D.BAS</td></tr>
+                            <tr><td style="border:1px solid #475569; padding:4px; background:#fee2e2;">1.00 - 2.99</td><td style="border:1px solid #475569; padding:4px; background:#fee2e2;">DESEMPEÑO BAJO</td><td style="border:1px solid #475569; padding:4px; background:#fee2e2; font-weight:bold;">D.B</td></tr>
+                        </table>
+                        
+                        <table style="width:65%; border-collapse: collapse; font-size: 11px; border:1px solid #475569;">
+                            <tr>
+                                <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#f1f5f9; width:25%;">OBSERVACIONES</td>
+                                <td style="border:1px solid #475569; padding:6px; vertical-align:top; height:60px; font-style:italic;">${reco}</td>
+                            </tr>
+                            <tr>
+                                <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#f1f5f9;">FECHA DE ENTREGA</td>
+                                <td style="border:1px solid #475569; padding:6px;">${new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="margin-top: 50px; display: flex; justify-content: space-around; text-align: center; font-size: 11px; font-weight:bold;">
+                        <div><div style="border-top: 1px solid #000; width: 250px; margin: 0 auto 5px;"></div>FIRMA DIRECTOR(A) DE GRUPO</div>
+                        <div><div style="border-top: 1px solid #000; width: 250px; margin: 0 auto 5px;"></div>FIRMA COORDINACIÓN</div>
+                    </div>
+                </div>
+            `;
+        };
+
+        window.printBoletinGeneral = () => {
+            let grado = window.appState.gradoActivo;
+            let estudiantesMaster = [...window.appState.grados[grado].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+            if(estudiantesMaster.length === 0) return window.customAlert("No hay estudiantes matriculados en este grado.");
+            
+            let htmlFinal = "";
+            estudiantesMaster.forEach((est) => {
+                htmlFinal += window.obtenerHTMLBoletin(est.nombre, est.pin, grado, window.periodoActivo);
+            });
+
+            document.getElementById('vista-impresion').innerHTML = htmlFinal;
+            setTimeout(() => { 
+                window.print(); 
+                document.getElementById('vista-impresion').innerHTML = ''; 
+            }, 500);
+        };
+
+        window.imprimirReporteFamiliar = () => {
+            let estNombre = window.datosPadre.nombre;
+            let grado = window.datosPadre.grado;
+            let htmlFinal = window.obtenerHTMLBoletin(estNombre, window.datosPadre.pin, grado, 'final');
+
+            document.getElementById('vista-impresion').innerHTML = htmlFinal;
+            setTimeout(() => { 
+                window.print(); 
+                document.getElementById('vista-impresion').innerHTML = ''; 
+            }, 500);
+        };
+
+        window.printPlanilla = () => {
+            let ests = [...window.appState.grados[window.appState.gradoActivo].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+            let strPeriodo = window.periodoActivo === 'final' ? 'ACUMULADO ANUAL' : `PERIODO ${window.periodoActivo}`;
             let logoDefault = window.masterDB[Object.keys(window.masterDB)[0]]?.logo || '';
             const iH = logoDefault ? `<img src="${logoDefault}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; border-radius:50%; z-index:10;">` : '';
-            return `
-                <div class="print-only mb-6 border-b-4 border-blue-900 pb-4 flex justify-between items-center">
+            
+            let header = `
+                <div class="mb-6 border-b-4 border-blue-900 pb-4 flex justify-between items-center" style="font-family: Arial, sans-serif; background:white;">
                     <div class="flex items-center gap-4">
                         <div style="position:relative; width:75px; height:75px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-radius:50%;">
                             <div style="position:absolute; inset:0; background:#1e3a8a; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:18px; z-index:0;">CVS</div>
@@ -1471,28 +1624,17 @@
                         </div>
                         <div>
                             <h1 class="text-2xl font-black text-gray-900 m-0 tracking-tight" style="color: #0f172a;">COLEGIO VIDA SANA REDENSIÓN</h1>
-                            <p class="text-[11px] text-gray-600 m-0 leading-tight mt-1 font-medium">
-                                Código del DANE No. 425290002398 aprobado MEN<br>
-                                Según Resolución 0007 del 15 de Febrero de 2011<br>
-                                Finca Chicalá Vereda La Palma - Teléfono 3208466868<br>
-                                Fusagasugá - Cundinamarca
-                            </p>
+                            <p class="text-[11px] text-gray-600 m-0 leading-tight mt-1 font-medium">Fusagasugá - Cundinamarca</p>
                         </div>
                     </div>
                     <div class="text-right">
-                        <h2 class="font-black text-xl text-blue-800 m-0">${titulo}</h2>
-                        <p class="text-sm text-gray-700 m-0 font-bold">${subtitulo}</p>
-                        <p class="text-xs text-gray-400 m-0 font-medium mt-1">Año Lectivo: ${new Date().getFullYear()}</p>
+                        <h2 class="font-black text-xl text-blue-800 m-0">PLANILLA - GRADO ${window.appState.gradoActivo}°</h2>
+                        <p class="text-sm text-gray-700 m-0 font-bold">ASIGNATURA: ${window.asignaturaActiva} | ${strPeriodo}</p>
                     </div>
                 </div>
             `;
-        };
 
-        window.printPlanilla = () => {
-            let ests = [...window.appState.grados[window.appState.gradoActivo].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
-            let strPeriodo = window.periodoActivo === 'final' ? 'ACUMULADO ANUAL' : `PERIODO ${window.periodoActivo}`;
-            
-            let html = `${window.getHeaderImpresion(`PLANILLA - GRADO ${window.appState.gradoActivo}°`, `ASIGNATURA: ${window.asignaturaActiva} | ${strPeriodo}`)}
+            let html = `<div style="padding: 20px; background: white;">${header}
                 <table style="width:100%; border-collapse:collapse; font-size:11px;">
                     <thead><tr style="background:#1e3a8a; color:white; border:1px solid #1e3a8a;"><th style="border:1px solid #94a3b8; padding:6px;">No.</th><th style="border:1px solid #94a3b8; padding:6px; text-align:left;">Estudiante</th>`;
             
@@ -1510,125 +1652,15 @@
                     html += `<tr><td style="border:1px solid #cbd5e1; text-align:center;">${i+1}</td><td style="border:1px solid #cbd5e1; padding:4px;"><b>${e.nombre}</b></td><td style="border:1px solid #cbd5e1; text-align:center;">${p.comp}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.part}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.act}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.exa}</td><td style="border:1px solid #cbd5e1; text-align:center; font-weight:bold; background:#f8fafc;">${p.def}</td><td style="border:1px solid #cbd5e1; text-align:center;">${p.totalClases>0?((100-p.asistencia)/100*p.totalClases).toFixed(0):0}</td></tr>`;
                 }
             });
-            html += `</tbody></table><div class="mt-16 flex justify-around text-center text-xs print-only" style="display:flex!important; page-break-inside:avoid; margin-top:50px;"><div><div style="border-top:1px solid black; width:200px; margin:0 auto 5px;"></div>Firma Docente</div><div><div style="border-top:1px solid black; width:200px; margin:0 auto 5px;"></div>Coordinación Académica</div></div>`;
+            html += `</tbody></table><div class="mt-16 flex justify-around text-center text-xs" style="display:flex!important; page-break-inside:avoid; margin-top:50px;"><div><div style="border-top:1px solid black; width:200px; margin:0 auto 5px;"></div>Firma Docente</div><div><div style="border-top:1px solid black; width:200px; margin:0 auto 5px;"></div>Coordinación Académica</div></div></div>`;
+            
             document.getElementById('vista-impresion').innerHTML = html;
             document.body.classList.add('print-landscape');
-            setTimeout(() => { window.print(); document.body.classList.remove('print-landscape'); document.getElementById('vista-impresion').innerHTML = ''; }, 200);
-        };
-
-        window.printBoletinGeneral = () => {
-            if(document.getElementById('obs-estudiante')) window.guardarObservacionSilenciosa();
-            let grado = window.appState.gradoActivo;
-            let estudiantesMaster = [...window.appState.grados[grado].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
-            if(estudiantesMaster.length === 0) return window.customAlert("No hay estudiantes matriculados en este grado.");
-            
-            let strTitulo = window.periodoActivo === 'final' ? `INFORME ACUMULADO FINAL - GRADO ${grado}°` : `INFORME PEDAGÓGICO - GRADO ${grado}°`;
-            let htmlFinal = "";
-
-            estudiantesMaster.forEach((est) => {
-                let filasAsignaturas = "";
-                let sumaDefinitivas = 0;
-                let totalAsignaturas = 0;
-
-                for(let asigNombre in window.masterDB) {
-                    let asigData = window.masterDB[asigNombre];
-                    if(asigData.grados && asigData.grados[grado]) {
-                        let estAsig = asigData.grados[grado].estudiantes.find(e => e.nombre === est.nombre);
-                        if(estAsig) {
-                            let promedios = window.calcularPromedios(estAsig.notas, window.periodoActivo);
-                            let des = window.getDesempeno(promedios.def);
-                            
-                            sumaDefinitivas += parseFloat(promedios.def);
-                            totalAsignaturas++;
-
-                            if(window.periodoActivo === 'final') {
-                                filasAsignaturas += `
-                                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                                        <td style="border:1px solid #94a3b8; padding:10px; font-weight:bold; background-color:#f8fafc; color:#1e293b;">${asigNombre}</td>
-                                        <td style="border:1px solid #94a3b8; padding:10px; text-align:center; color:#334155;">${promedios.p1>0?promedios.p1:'-'}</td>
-                                        <td style="border:1px solid #94a3b8; padding:10px; text-align:center; color:#334155;">${promedios.p2>0?promedios.p2:'-'}</td>
-                                        <td style="border:1px solid #94a3b8; padding:10px; text-align:center; color:#334155;">${promedios.p3>0?promedios.p3:'-'}</td>
-                                        <td style="border:1px solid #94a3b8; padding:10px; text-align:center; color:#334155;">${promedios.p4>0?promedios.p4:'-'}</td>
-                                        <td style="border:1px solid #94a3b8; padding:10px; text-align:center; font-size:16px; font-weight:900; color:#0f172a; background-color:#f1f5f9;">${promedios.def}</td>
-                                        <td style="border:1px solid #94a3b8; padding:10px; text-align:center; font-weight:600; color:#334155;">${des.texto}</td>
-                                    </tr>
-                                `;
-                            } else {
-                                let dbaMateria = (asigData.grados[grado].dba && asigData.grados[grado].dba[window.periodoActivo]) ? asigData.grados[grado].dba[window.periodoActivo] : "<span style='color:#9ca3af; font-style:italic;'>Sin indicador de desempeño registrado.</span>";
-                                filasAsignaturas += `
-                                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                                        <td style="border:1px solid #94a3b8; padding:10px; font-weight:bold; background-color:#f8fafc; color:#1e293b;">${asigNombre}<br><span style="font-size:10px; font-weight:normal; color:#64748b;">Periodo ${window.periodoActivo}</span></td>
-                                        <td style="border:1px solid #94a3b8; padding:10px; font-size:11px; text-align:justify; color:#334155;">${dbaMateria}</td>
-                                        <td style="border:1px solid #94a3b8; padding:10px; text-align:center; font-size:16px; font-weight:900; color:#0f172a;">${promedios.def}</td>
-                                        <td style="border:1px solid #94a3b8; padding:10px; text-align:center; font-weight:600; color:#334155;">${des.texto}</td>
-                                        <td style="border:1px solid #94a3b8; padding:10px; text-align:center; color:#64748b;">${100 - promedios.asistencia}%</td>
-                                    </tr>
-                                `;
-                            }
-                        }
-                    }
-                }
-
-                let promedioGeneral = totalAsignaturas > 0 ? (sumaDefinitivas / totalAsignaturas).toFixed(1) : "0.0";
-                let desGeneral = window.getDesempeno(promedioGeneral);
-                
-                let reco = "";
-                if (desGeneral.texto === "Superior") reco = "Demuestra un excelente compromiso y apropiación de los saberes. Se recomienda continuar con ese nivel de excelencia y liderazgo.";
-                else if (desGeneral.texto === "Alto") reco = "Mantiene un buen ritmo de aprendizaje y participación. Se sugiere seguir fortaleciendo sus hábitos de estudio.";
-                else if (desGeneral.texto === "Básico") reco = "Alcanza los logros mínimos requeridos. Se recomienda mayor dedicación, repaso en casa y participación activa para superar sus dificultades.";
-                else if (desGeneral.texto === "Bajo") reco = "Presenta dificultades significativas en su proceso. Es urgente establecer un plan de mejora y mayor acompañamiento familiar.";
-                else reco = "El estudiante no cuenta con suficientes calificaciones para arrojar un promedio representativo.";
-
-                let theadHtml = window.periodoActivo === 'final' ? 
-                    `<th style="border:1px solid #1e3a8a; padding:10px;">Campos de Formación</th><th style="border:1px solid #1e3a8a; padding:10px;">P1</th><th style="border:1px solid #1e3a8a; padding:10px;">P2</th><th style="border:1px solid #1e3a8a; padding:10px;">P3</th><th style="border:1px solid #1e3a8a; padding:10px;">P4</th><th style="border:1px solid #1e3a8a; padding:10px;">Definitiva Anual</th><th style="border:1px solid #1e3a8a; padding:10px;">Desempeño</th>` : 
-                    `<th style="border:1px solid #1e3a8a; padding:10px; width: 18%;">Campos de Formación</th><th style="border:1px solid #1e3a8a; padding:10px; width: 50%;">Indicadores de Desempeño</th><th style="border:1px solid #1e3a8a; padding:10px; width: 10%;">Definitiva</th><th style="border:1px solid #1e3a8a; padding:10px; width: 12%;">Desempeño</th><th style="border:1px solid #1e3a8a; padding:10px; width: 10%;">Fallas</th>`;
-                
-                let tfootColspan = window.periodoActivo === 'final' ? 5 : 2;
-
-                htmlFinal += `
-                    <div style="page-break-after: always; padding: 20px;">
-                        ${window.getHeaderImpresion(strTitulo, `ESTUDIANTE: <span style="color:#475569;">${est.nombre}</span>`)}
-
-                        <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            <thead><tr style="background:#1e3a8a; color:white; text-align:center; font-weight:600;">${theadHtml}</tr></thead>
-                            <tbody>${filasAsignaturas}</tbody>
-                            <tfoot>
-                                <tr style="background:#f1f5f9;">
-                                    <td style="border:1px solid #94a3b8; padding:12px; text-align:right; font-weight:800; color:#0f172a;" colspan="${tfootColspan}">PROMEDIO GENERAL DEL ESTUDIANTE:</td>
-                                    <td style="border:1px solid #94a3b8; padding:12px; text-align:center; font-size: 18px; font-weight:900; color:#1e3a8a;">${promedioGeneral}</td>
-                                    <td style="border:1px solid #94a3b8; padding:12px; text-align:center; font-weight:800; color:#0f172a; background-color:#e2e8f0;">${desGeneral.texto}</td>
-                                    ${window.periodoActivo === 'final' ? '' : '<td style="border:1px solid #94a3b8; padding:12px; background-color:#f1f5f9;"></td>'}
-                                </tr>
-                            </tfoot>
-                        </table>
-                        
-                        <div style="margin-top: 25px; display: flex; gap: 20px; page-break-inside: avoid;">
-                            <div style="flex: 1; padding: 15px; border: 1px solid #0f172a; font-size: 12px; min-height: 100px; background-color: #ffffff;">
-                                <strong style="color:#0f172a; font-size:11px; display:block; margin-bottom:5px;">OBSERVACIONES Y RECOMENDACIONES:</strong>
-                                <div style="color:#334155; line-height:1.4; text-align:justify;">${reco}</div>
-                                <div style="margin-top:15px; color:#9ca3af; font-style:italic; font-size:11px;">
-                                    <br><br>(Espacio para anotaciones adicionales del director de grupo)
-                                </div>
-                            </div>
-                            <div style="width: 200px; padding: 15px; border: 1px solid #0f172a; font-size: 10px; text-align: left; background-color: #f8fafc;">
-                                <strong style="display:block; text-align:center; margin-bottom:10px; font-size:11px; color:#0f172a;">ESCALA SIEE</strong>
-                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span style="color:#334155;">SUPERIOR</span> <span style="color:#475569;">4.6 - 5.0</span></div>
-                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span style="color:#334155;">ALTO</span> <span style="color:#475569;">4.0 - 4.5</span></div>
-                                <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span style="color:#334155;">BÁSICO</span> <span style="color:#475569;">3.0 - 3.9</span></div>
-                                <div style="display:flex; justify-content:space-between;"><span style="color:#334155;">BAJO</span> <span style="color:#475569;">1.0 - 2.9</span></div>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 50px; display: flex; justify-content: space-around; text-align: center; font-size: 13px; font-weight:500; color:#334155; page-break-inside: avoid;">
-                            <div><div style="border-top: 1px solid #0f172a; width: 220px; margin: 0 auto 10px;"></div>Firma Director de Grupo</div>
-                            <div><div style="border-top: 1px solid #0f172a; width: 220px; margin: 0 auto 10px;"></div>Firma Coordinación</div>
-                        </div>
-                    </div>
-                `;
-            });
-            document.getElementById('vista-impresion').innerHTML = htmlFinal;
-            document.body.classList.add('print-portrait');
-            setTimeout(() => { window.print(); document.body.classList.remove('print-portrait'); document.getElementById('vista-impresion').innerHTML = ''; }, 500);
+            setTimeout(() => { 
+                window.print(); 
+                document.body.classList.remove('print-landscape'); 
+                document.getElementById('vista-impresion').innerHTML = ''; 
+            }, 200);
         };
 
         window.exportarExcel = () => {
@@ -1682,36 +1714,12 @@
                             datosExtraidos[asig].propietario = user.uid;
                             datosExtraidos[asig].propietarioNombre = user.email;
                         }
-                        for(let g=1; g<=5; g++) {
-                            let grado = datosExtraidos[asig].grados[g];
-                            if(grado) {
-                                if(typeof grado.dba === 'string') {
-                                    if(grado.dba === "[object Object]") grado.dba = ""; 
-                                    grado.dba = { "1": grado.dba, "2": "", "3": "", "4": "" };
-                                }
-                                if(grado.estudiantes) {
-                                    grado.estudiantes.forEach(est => {
-                                        if(typeof est.observacion === 'string') {
-                                            if(est.observacion === "[object Object]") est.observacion = ""; 
-                                            est.observacion = { "1": est.observacion, "2": "", "3": "", "4": "" };
-                                        }
-                                        if(!est.pin) est.pin = Math.floor(1000 + Math.random() * 9000).toString();
-                                        if(!est.foto) est.foto = null;
-                                        est.notas.forEach(n => {
-                                            if(!n.periodo) n.periodo = 1;
-                                        });
-                                    });
-                                }
-                            }
-                        }
                     }
-
                     window.masterDB = datosExtraidos;
                     if(data.logo) { for(let asig in window.masterDB) { window.masterDB[asig].logo = data.logo; } }
                     window.asignaturaActiva = Object.keys(window.masterDB)[0];
                     window.appState = window.masterDB[window.asignaturaActiva];
                     window.verificarPropiedad();
-                    
                     window.actualizarUIComun();
                     document.getElementById('contenido-dinamico').classList.add('hidden');
                     document.getElementById('mensaje-vacio').classList.remove('hidden');
@@ -1723,41 +1731,9 @@
                         await Promise.all(promesas); 
                         window.showToast("¡Restaurado y subido con éxito!", "success");
                     }
-                } catch (err) { window.customAlert("Error al leer: " + err.message); }
+                } catch (err) { window.customAlert("Error al leer el archivo. Sube un archivo válido."); }
             };
             reader.readAsText(file);
-        };
-
-        window.moverAPeriodo3 = () => {
-            window.customConfirm("¿Seguro que deseas mover TODAS las notas, observaciones y DBAs del Periodo 1 al Periodo 3?", async () => {
-                let hizoCambios = false;
-                for(let asig in window.masterDB) {
-                    for(let g=1; g<=5; g++) {
-                        let grado = window.masterDB[asig].grados[g];
-                        if(grado.dba && grado.dba["1"]) { grado.dba["3"] = grado.dba["1"]; grado.dba["1"] = ""; hizoCambios = true; }
-                        if(grado.estudiantes) {
-                            grado.estudiantes.forEach(est => {
-                                if(est.observacion && est.observacion["1"]) { est.observacion["3"] = est.observacion["1"]; est.observacion["1"] = ""; hizoCambios = true; }
-                                est.notas.forEach(n => {
-                                    if(n.periodo === 1 || n.periodo === "1") { n.periodo = 3; hizoCambios = true; }
-                                });
-                            });
-                        }
-                    }
-                    if (hizoCambios && window.esPropietario) {
-                        await window.guardarEnNube(asig);
-                    }
-                }
-                
-                if(hizoCambios) {
-                    window.periodoActivo = "3";
-                    document.getElementById('periodo-selector').value = "3";
-                    window.actualizarUIComun();
-                    window.showToast("Tus datos fueron movidos al Periodo 3", "success");
-                } else {
-                    window.customAlert("No había datos en el Periodo 1 para mover.");
-                }
-            });
         };
 
         window.onload = inicializarFirebase;
