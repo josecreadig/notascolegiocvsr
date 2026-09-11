@@ -225,9 +225,6 @@
                     <button onclick="document.getElementById('restaurar-upload').value = ''; document.getElementById('restaurar-upload').click()" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 p-2 rounded text-xs font-bold transition shadow-sm w-full sm:w-auto" title="Restaurar (Subir backup)">
                         <i class="fa-solid fa-upload"></i> Restaurar
                     </button>
-                    <button onclick="window.moverAPeriodo3()" class="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 p-2 rounded text-xs font-bold transition shadow-sm w-full sm:w-auto" title="Mover notas del Periodo 1 al 3">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> A P3
-                    </button>
                     <input type="file" id="restaurar-upload" class="hidden" accept=".json" onchange="window.restaurarJSON(event)">
                 </div>
             </div>
@@ -1995,38 +1992,6 @@
                 } catch (err) { window.customAlert("Error al leer: " + err.message); }
             };
             reader.readAsText(file);
-        };
-
-        window.moverAPeriodo3 = () => {
-            window.customConfirm("¿Seguro que deseas mover TODAS las notas, observaciones y DBAs del Periodo 1 al Periodo 3?", async () => {
-                let hizoCambios = false;
-                for(let asig in window.masterDB) {
-                    for(let g=1; g<=5; g++) {
-                        let grado = window.masterDB[asig].grados[g];
-                        if(grado.dba && grado.dba["1"]) { grado.dba["3"] = grado.dba["1"]; grado.dba["1"] = ""; hizoCambios = true; }
-                        if(grado.estudiantes) {
-                            grado.estudiantes.forEach(est => {
-                                if(est.observacion && est.observacion["1"]) { est.observacion["3"] = est.observacion["1"]; est.observacion["1"] = ""; hizoCambios = true; }
-                                est.notas.forEach(n => {
-                                    if(n.periodo === 1 || n.periodo === "1") { n.periodo = 3; hizoCambios = true; }
-                                });
-                            });
-                        }
-                    }
-                    if (hizoCambios && window.esPropietario) {
-                        await window.guardarEnNube(asig);
-                    }
-                }
-                
-                if(hizoCambios) {
-                    window.periodoActivo = "3";
-                    document.getElementById('periodo-selector').value = "3";
-                    window.actualizarUIComun();
-                    window.showToast("Tus datos fueron movidos al Periodo 3", "success");
-                } else {
-                    window.customAlert("No había datos en el Periodo 1 para mover.");
-                }
-            });
         };
 
         window.onload = inicializarFirebase;
