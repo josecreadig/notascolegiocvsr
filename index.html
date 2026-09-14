@@ -79,7 +79,9 @@
                 <button onclick="window.switchTab('tab-docente')" id="btn-tab-docente" class="flex-1 py-4 font-bold text-blue-600 border-b-2 border-blue-600 bg-blue-50 transition"><i class="fa-solid fa-chalkboard-user mr-2"></i>Docente</button>
                 <button onclick="window.switchTab('tab-padre')" id="btn-tab-padre" class="flex-1 py-4 font-bold text-gray-500 border-b-2 border-transparent hover:bg-gray-50 transition"><i class="fa-solid fa-children mr-2"></i>Acudiente</button>
             </div>
+            
             <div class="p-6 sm:p-8">
+                <!-- Login Docente -->
                 <div id="tab-docente" class="text-center">
                     <i class="fa-solid fa-shield-halved text-4xl text-blue-600 mb-3"></i>
                     <h2 class="text-2xl font-bold text-gray-800 mb-2">Acceso Institucional</h2>
@@ -91,6 +93,8 @@
                     </form>
                     <p id="login-error" class="text-red-500 text-xs mt-4 hidden font-medium"></p>
                 </div>
+                
+                <!-- Login Padre -->
                 <div id="tab-padre" class="text-center hidden">
                     <i class="fa-solid fa-house-user text-4xl text-green-600 mb-3"></i>
                     <h2 class="text-2xl font-bold text-gray-800 mb-2">Portal Familiar</h2>
@@ -135,6 +139,7 @@
                 <p class="text-blue-200 text-xs sm:text-sm truncate" id="nav-subtitle">Súper Cuaderno (SIEE) - <span id="header-asignatura" class="font-bold text-yellow-300">Cargando...</span> <span id="badge-lectura" class="hidden ml-2 bg-red-600 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded shadow">Solo Lectura</span></p>
             </div>
         </div>
+        
         <div class="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto justify-center sm:justify-end">
             <div id="user-info" class="hidden items-center gap-2 cursor-pointer hover:bg-blue-700 p-1.5 rounded transition" onclick="window.editarPerfilDocente()" title="Haz clic para editar tu Nombre Real">
                 <i class="fa-solid fa-circle-user text-2xl text-blue-300"></i>
@@ -191,12 +196,16 @@
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
                     <button id="btn-vista-masiva" onclick="window.showMassiveView()" class="bg-yellow-500 hover:bg-yellow-400 text-white p-2 rounded text-sm font-medium transition shadow-sm w-full">
-                        <i class="fa-solid fa-bolt mr-1"></i> Rápido
+                        <i class="fa-solid fa-bolt mr-1"></i> Notas Rápido
                     </button>
                     <button onclick="window.showGroupStats()" class="bg-indigo-500 hover:bg-indigo-400 text-white p-2 rounded text-sm font-medium transition shadow-sm w-full">
                         <i class="fa-solid fa-chart-simple mr-1"></i> Estadísticas
                     </button>
-                    <button onclick="window.printPlanilla()" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded text-sm font-medium transition shadow-sm sm:col-span-2 w-full">
+                    <!-- BOTÓN DE ASISTENCIA INTEGRADO -->
+                    <button onclick="window.showAsistenciaView()" class="bg-teal-600 hover:bg-teal-500 text-white p-2 rounded text-sm font-medium transition shadow-sm w-full sm:col-span-2">
+                        <i class="fa-solid fa-clipboard-user mr-1"></i> Llamar a Lista (Asistencia)
+                    </button>
+                    <button onclick="window.printPlanilla()" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded text-sm font-medium transition shadow-sm sm:col-span-2 w-full mt-1">
                         <i class="fa-solid fa-print mr-1"></i> Imprimir Planilla Auxiliar
                     </button>
                     <button onclick="window.exportarExcel()" class="bg-green-600 hover:bg-green-500 text-white p-2 rounded text-sm font-medium transition shadow-sm sm:col-span-2 w-full">
@@ -235,12 +244,13 @@
                 <i class="fa-solid fa-arrow-left text-4xl sm:text-5xl mb-4 text-gray-300 animate-pulse hidden lg:inline-block"></i>
                 <i class="fa-solid fa-arrow-up text-4xl sm:text-5xl mb-4 text-gray-300 animate-pulse lg:hidden"></i>
                 <p class="text-base sm:text-lg font-bold">Selecciona un estudiante o mira las estadísticas.</p>
-                <p class="text-xs sm:text-sm mt-2 font-medium text-blue-500">Versión 2.0.7 - SIEE Profesional</p>
+                <p class="text-xs sm:text-sm mt-2 font-medium text-blue-500">Versión 2.0.8 - SIEE Profesional</p>
             </div>
             <div id="contenido-dinamico" class="hidden w-full"></div>
         </div>
     </div>
 
+    <!-- Container exclusively for generating PDF/Print views -->
     <div id="vista-impresion" class="print-only"></div>
 
     <script type="module">
@@ -277,13 +287,19 @@
         window.datosPadre = null;
         let chartInstance = null;
 
-        // Escudo Anti-Borrado de Foco
+        window.escapeHTML = (str) => {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        };
+
         window.focoActivoId = null;
         window.focoValor = null;
 
         document.addEventListener('focusin', (e) => {
             if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
-                window.focoActivoId = e.target.id || e.target.className; // Captura ID o clase para campos masivos
+                window.focoActivoId = e.target.id || e.target.className; 
                 window.focoValor = e.target.value;
             }
         });
@@ -315,7 +331,7 @@
 
         const abrirModal = (titulo, mensaje, showInput, showCancel, onConfirm, defaultValue = "") => {
             modalTitle.innerHTML = titulo;
-            modalMsg.innerText = mensaje;
+            modalMsg.innerText = window.escapeHTML(mensaje);
             
             if(showInput) {
                 modalInput.classList.remove('hidden');
@@ -349,7 +365,7 @@
             const toast = document.createElement('div');
             const color = type === 'success' ? 'bg-green-500' : (type === 'warning' ? 'bg-orange-500' : 'bg-gray-800');
             toast.className = `toast text-white px-4 py-3 rounded shadow-lg mb-2 font-medium flex items-center gap-2 text-sm sm:text-base ${color}`;
-            toast.innerHTML = type === 'warning' ? `<i class="fa-solid fa-triangle-exclamation"></i> ${msg}` : `<i class="fa-solid fa-check"></i> ${msg}`;
+            toast.innerHTML = type === 'warning' ? `<i class="fa-solid fa-triangle-exclamation"></i> ${window.escapeHTML(msg)}` : `<i class="fa-solid fa-check"></i> ${window.escapeHTML(msg)}`;
             container.appendChild(toast);
             void toast.offsetWidth;
             toast.classList.add('show');
@@ -388,12 +404,12 @@
                     if(loggedUser.isAnonymous && window.datosPadre) {
                         document.getElementById('user-info').classList.remove('hidden');
                         document.getElementById('user-info').classList.add('flex');
-                        document.getElementById('user-name').innerText = "Familia: " + window.datosPadre.nombre;
+                        document.getElementById('user-name').innerText = "Familia: " + window.escapeHTML(window.datosPadre.nombre);
                         document.getElementById('btn-salir-text').innerText = "Salir del Portal";
                     } else {
                         document.getElementById('user-info').classList.remove('hidden');
                         document.getElementById('user-info').classList.add('flex');
-                        document.getElementById('user-name').innerText = user.displayName ? user.displayName.toUpperCase() : (user.email || "Docente");
+                        document.getElementById('user-name').innerText = user.displayName ? window.escapeHTML(user.displayName.toUpperCase()) : (window.escapeHTML(user.email) || "Docente");
                     }
                     iniciarNube();
                 } else {
@@ -411,7 +427,7 @@
             window.customPrompt("Ingresa tu Nombre Completo (Este nombre saldrá impreso en los boletines y observadores):", user.displayName || "", (nuevoNombre) => {
                 if(nuevoNombre.trim()) {
                     updateProfile(user, { displayName: nuevoNombre.trim() }).then(() => {
-                        document.getElementById('user-name').innerText = nuevoNombre.trim().toUpperCase();
+                        document.getElementById('user-name').innerText = window.escapeHTML(nuevoNombre.trim().toUpperCase());
                         window.showToast("Perfil actualizado correctamente", "success");
                     }).catch(e => {
                         window.customAlert("Error al actualizar el perfil.");
@@ -523,6 +539,8 @@
                                     grado.estudiantes.forEach(est => {
                                         if(!est.pin) { est.pin = Math.floor(1000 + Math.random() * 9000).toString(); asigModificada = true; }
                                         
+                                        if(!est.registro_asistencia) { est.registro_asistencia = []; asigModificada = true; }
+
                                         if(typeof est.observacion === 'string') {
                                             if(est.observacion === "[object Object]") {
                                                 est.observacion = { "1": "", "2": "", "3": "", "4": "" };
@@ -537,11 +555,11 @@
                                                 n.periodo = 1;
                                                 asigModificada = true;
                                             }
+                                            if(n.justificada === undefined) { n.justificada = false; asigModificada = true; }
                                         });
                                     });
                                 }
                             }
-                            // SOLO repara si faltaba estructura base. Previene bucle infinito.
                             if(asigModificada) asignaturasAMigrar.add(asig);
                         }
 
@@ -582,7 +600,6 @@
                         window.verificarPropiedad();
                         window.actualizarUIComun();
 
-                        // RESTAURADOR DE FOCO ANTI-BORRADO
                         if (window.focoActivoId) {
                             setTimeout(() => {
                                 const elToFocus = document.getElementById(window.focoActivoId) || document.querySelector(`.${window.focoActivoId}`);
@@ -645,10 +662,10 @@
             const selector = document.getElementById('asignatura-selector');
             selector.innerHTML = '';
             for (let asig in window.masterDB) {
-                selector.innerHTML += `<option value="${asig}" ${asig === window.asignaturaActiva ? 'selected' : ''}>${asig}</option>`;
+                selector.innerHTML += `<option value="${asig}" ${asig === window.asignaturaActiva ? 'selected' : ''}>${window.escapeHTML(asig)}</option>`;
             }
             
-            document.getElementById('header-asignatura').innerText = window.asignaturaActiva;
+            document.getElementById('header-asignatura').innerText = window.escapeHTML(window.asignaturaActiva);
             document.getElementById('grado-selector').value = window.appState.gradoActivo;
             document.getElementById('periodo-selector').value = window.periodoActivo;
             document.getElementById('ihs-display').innerText = window.appState.ihs || 2;
@@ -667,7 +684,7 @@
             window.renderListaEstudiantes();
             
             if(window.estudianteActivo) window.renderVistaIndividual();
-            else if(!document.getElementById('contenido-dinamico').classList.contains('hidden') && !window.estudianteActivo && !document.getElementById('grafico-grupal')) window.showMassiveView();
+            else if(!document.getElementById('contenido-dinamico').classList.contains('hidden') && !window.estudianteActivo && !document.getElementById('grafico-grupal') && !document.getElementById('a-lista')) window.showMassiveView();
         };
 
         window.cambiarPeriodo = () => {
@@ -733,7 +750,7 @@
                 let gradosClonados = {};
                 for (let i = 1; i <= 5; i++) {
                     let estLimpios = window.appState.grados[i].estudiantes.map(e => ({
-                        id: e.id, nombre: e.nombre, pin: e.pin, notas: [], observacion: {1:"", 2:"", 3:"", 4:""}, foto: e.foto || null
+                        id: e.id, nombre: e.nombre, pin: e.pin, notas: [], registro_asistencia: e.registro_asistencia || [], observacion: {1:"", 2:"", 3:"", 4:""}, foto: e.foto || null
                     }));
                     gradosClonados[i] = { dba: {1:"", 2:"", 3:"", 4:""}, estudiantes: estLimpios };
                 }
@@ -880,7 +897,7 @@
             const nombre = document.getElementById('nuevo-estudiante').value.trim();
             if (nombre && window.esPropietario) {
                 window.appState.grados[window.appState.gradoActivo].estudiantes.push({
-                    id: Date.now().toString(), nombre: nombre, pin: Math.floor(1000 + Math.random() * 9000).toString(), notas: [], observacion: {1:"", 2:"", 3:"", 4:""}, foto: null
+                    id: Date.now().toString(), nombre: nombre, pin: Math.floor(1000 + Math.random() * 9000).toString(), notas: [], registro_asistencia: [], observacion: {1:"", 2:"", 3:"", 4:""}, foto: null
                 });
                 document.getElementById('nuevo-estudiante').value = '';
                 window.guardarEnNube();
@@ -921,6 +938,33 @@
             });
         };
 
+        window.getFallasInfo = (est, periodoReq) => {
+            let fallasTotales = 0;
+            let fallasJustificadas = 0;
+            
+            const contar = (arr) => {
+                if(!arr) return;
+                arr.forEach(item => {
+                    if(periodoReq === 'final' || parseInt(item.periodo) === parseInt(periodoReq)) {
+                        if(item.asistio === false || item.asistio === "false") {
+                            fallasTotales++;
+                            if(item.justificada === true || item.justificada === "true") {
+                                fallasJustificadas++;
+                            }
+                        }
+                    }
+                });
+            };
+            contar(est.notas);
+            contar(est.registro_asistencia);
+
+            return {
+                totales: fallasTotales,
+                justificadas: fallasJustificadas,
+                injustificadas: fallasTotales - fallasJustificadas
+            };
+        };
+
         window.calcularPromedios = (notasIn, periodoReq = window.periodoActivo) => {
             if (periodoReq === 'final') {
                 let p1 = window.calcularPromedios(notasIn, 1);
@@ -935,11 +979,10 @@
                 if(p4.def > 0) { sumDef += parseFloat(p4.def); countPer++; }
                 
                 let defFinal = countPer > 0 ? (sumDef / countPer).toFixed(1) : 0.0;
-                let asisTotal = countPer > 0 ? ((parseFloat(p1.asistencia) + parseFloat(p2.asistencia) + parseFloat(p3.asistencia) + parseFloat(p4.asistencia)) / countPer) : 100;
-
+                
                 return {
                     isFinal: true, p1: p1.def, p2: p2.def, p3: p3.def, p4: p4.def,
-                    def: defFinal, asistencia: asisTotal.toFixed(0), totalClases: notasIn.length
+                    def: defFinal
                 };
             }
 
@@ -962,10 +1005,7 @@
             let definitiva = (pComp * 0.3) + (pPart * 0.1) + (pAct * 0.2) + (pExa * 0.4);
             if (comp.count === 0 && part.count === 0 && act.count === 0 && exa.count === 0) definitiva = 0;
 
-            let asistencias = nPer.filter(n => n.asistio).length;
-            let pAsistencia = nPer.length > 0 ? (asistencias / nPer.length) * 100 : 100;
-
-            return { comp: pComp.toFixed(1), part: pPart.toFixed(1), act: pAct.toFixed(1), exa: pExa.toFixed(1), def: definitiva.toFixed(1), asistencia: pAsistencia.toFixed(0), totalClases: nPer.length };
+            return { comp: pComp.toFixed(1), part: pPart.toFixed(1), act: pAct.toFixed(1), exa: pExa.toFixed(1), def: definitiva.toFixed(1) };
         };
 
         window.getDesempeno = (nota) => {
@@ -996,7 +1036,7 @@
                             <div class="flex items-center">
                                 ${avatarLi}
                                 <div>
-                                    <p class="font-medium text-sm text-gray-800">${est.nombre}</p>
+                                    <p class="font-medium text-sm text-gray-800">${window.escapeHTML(est.nombre)}</p>
                                     <p class="text-xs text-gray-500 font-bold">${window.periodoActivo==='final'?'Nota Anual':'Definitiva'}: <span class="${p.def>0?'text-blue-600':''}">${p.def}</span></p>
                                 </div>
                             </div>
@@ -1022,6 +1062,7 @@
 
             let p = window.calcularPromedios(est.notas, window.periodoActivo);
             let des = window.getDesempeno(p.def);
+            let infoFallas = window.getFallasInfo(est, window.periodoActivo);
 
             let fotoHtml = est.foto ? `<img src="${est.foto}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-blue-400 shadow-sm bg-white flex-shrink-0">` : `<div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-blue-100 border-2 border-blue-400 flex items-center justify-center text-blue-500 text-2xl sm:text-3xl font-bold shadow-sm flex-shrink-0"><i class="fa-solid fa-user"></i></div>`;
             let clickHandler = window.esPropietario ? `onclick="document.getElementById('foto-estudiante-upload').click()"` : "";
@@ -1043,11 +1084,12 @@
                         </div>
                         <div>
                             <h2 class="text-xl sm:text-2xl font-bold text-gray-800 inline-flex items-center justify-center sm:justify-start flex-wrap">
-                                ${est.nombre}
+                                ${window.escapeHTML(est.nombre)}
                                 ${window.esPropietario ? `<button onclick="window.editarNombreEstudiante()" class="ml-2 text-blue-500 hover:text-blue-700 text-sm transition"><i class="fa-solid fa-pen"></i></button>` : ''}
                             </h2>
-                            <p class="text-xs sm:text-sm text-gray-500 font-bold mt-1">${window.asignaturaActiva} - Grado ${window.appState.gradoActivo}° | <span class="text-blue-600">${window.periodoActivo==='final'?'Acumulado Anual':'Periodo '+window.periodoActivo}</span></p>
+                            <p class="text-xs sm:text-sm text-gray-500 font-bold mt-1">${window.escapeHTML(window.asignaturaActiva)} - Grado ${window.appState.gradoActivo}° | <span class="text-blue-600">${window.periodoActivo==='final'?'Acumulado Anual':'Periodo '+window.periodoActivo}</span></p>
                             <p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-key text-green-500 mr-1"></i>PIN Familias: <b class="text-gray-700 tracking-widest">${est.pin || '0000'}</b> ${window.esPropietario ? `<button onclick="window.cambiarPIN()" class="text-blue-500 ml-2 hover:underline">Cambiar</button>` : ''}</p>
+                            <p class="text-xs font-bold mt-1 ${infoFallas.totales > 0 ? 'text-red-500' : 'text-gray-400'}"><i class="fa-solid fa-user-xmark mr-1"></i> Fallas P${window.periodoActivo}: ${infoFallas.totales} (${infoFallas.justificadas} Justificadas)</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap justify-center sm:justify-end gap-2 w-full md:w-auto">
@@ -1154,9 +1196,9 @@
                             </div>
                             <div class="flex-1 w-full sm:w-auto min-w-[150px]">
                                 <label class="block text-xs font-bold text-blue-800 mb-1">Actividad</label>
-                                <input type="text" id="nota-tema" class="w-full border-blue-300 rounded p-2 text-sm outline-none" value="${window.lastCriterios.tema}" required>
+                                <input type="text" id="nota-tema" class="w-full border-blue-300 rounded p-2 text-sm outline-none" value="${window.escapeHTML(window.lastCriterios.tema)}" required>
                             </div>
-                            <div class="w-full sm:w-36">
+                            <div class="w-full sm:w-32">
                                 <label class="block text-xs font-bold text-blue-800 mb-1">Dimensión</label>
                                 <select id="nota-dim" class="w-full border-blue-300 rounded p-2 text-sm outline-none">
                                     <option ${window.lastCriterios.dimension==='Compromiso'?'selected':''}>Compromiso</option>
@@ -1171,7 +1213,11 @@
                             </div>
                             <div class="w-full sm:w-16 flex sm:flex-col items-center justify-between sm:justify-start">
                                 <label class="block text-xs font-bold text-blue-800 sm:mb-2">Asistió</label>
-                                <input type="checkbox" id="nota-asistencia" checked class="w-5 h-5 accent-blue-600">
+                                <input type="checkbox" id="nota-asistencia" checked class="w-5 h-5 accent-blue-600" onchange="document.getElementById('nota-justificada').disabled = this.checked; if(this.checked) document.getElementById('nota-justificada').checked = false;">
+                            </div>
+                            <div class="w-full sm:w-24 flex sm:flex-col items-center justify-between sm:justify-start">
+                                <label class="block text-[11px] font-bold text-gray-500 sm:mb-2" title="Marcar si el estudiante trajo excusa justificada">Excusa</label>
+                                <input type="checkbox" id="nota-justificada" disabled class="w-5 h-5 accent-green-500">
                             </div>
                             <button type="submit" id="btn-guardar-nota" class="w-full sm:w-auto bg-blue-600 text-white px-5 py-2 rounded font-bold hover:bg-blue-500 shadow transition"><i class="fa-solid fa-plus mr-2 sm:mr-0"></i><span class="sm:hidden">Guardar Nota</span></button>
                         </form>
@@ -1179,26 +1225,28 @@
                     ` : `<div class="bg-red-50 p-3 rounded border border-red-200 mb-6 text-red-700 text-sm font-bold text-center"><i class="fa-solid fa-lock mr-2"></i>Modo Lectura Activo.</div>`}
 
                     <div class="overflow-x-auto border rounded bg-white mb-6">
-                        <table class="w-full text-sm border-collapse min-w-[500px]">
+                        <table class="w-full text-sm border-collapse min-w-[550px]">
                             <thead>
                                 <tr class="bg-gray-100 text-gray-600 text-left">
                                     <th class="p-2 border-b">Fecha</th>
                                     <th class="p-2 border-b">Actividad</th>
                                     <th class="p-2 border-b">Dimensión</th>
                                     <th class="p-2 border-b text-center">Nota</th>
-                                    <th class="p-2 border-b text-center">Falla</th>
+                                    <th class="p-2 border-b text-center">Asistió</th>
+                                    <th class="p-2 border-b text-center">Justificada</th>
                                     <th class="p-2 border-b text-right no-print">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${notasMostrar.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-gray-400">Sin calificaciones en este periodo</td></tr>` : ''}
+                                ${notasMostrar.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-gray-400">Sin calificaciones en este periodo</td></tr>` : ''}
                                 ${notasMostrar.map((n) => `
                                     <tr class="border-b border-gray-100 ${window.notaEnEdicion === n.realIdx ? 'bg-yellow-100' : ''}">
                                         <td class="p-2 text-gray-500">${n.fecha}</td>
-                                        <td class="p-2 font-medium text-gray-700">${n.tema}</td>
+                                        <td class="p-2 font-medium text-gray-700">${window.escapeHTML(n.tema)}</td>
                                         <td class="p-2"><span class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs">${n.dimension}</span></td>
-                                        <td class="p-2 text-center font-black">${n.valor}</td>
-                                        <td class="p-2 text-center text-red-500 font-bold">${n.asistio ? '' : 'X'}</td>
+                                        <td class="p-2 text-center font-black text-base ${n.valor < 3 ? 'text-red-500' : 'text-blue-600'}">${n.valor}</td>
+                                        <td class="p-2 text-center text-red-500 font-bold">${n.asistio ? '<i class="fa-solid fa-check text-green-500"></i>' : 'Faltó'}</td>
+                                        <td class="p-2 text-center font-bold">${(!n.asistio && n.justificada) ? '<i class="fa-solid fa-file-medical text-green-500" title="Falla Justificada"></i>' : '-'}</td>
                                         <td class="p-2 text-right no-print">
                                             ${window.esPropietario ? `
                                             <button onclick="window.cargarEdicionNota(${n.realIdx})" class="text-blue-500 hover:text-blue-700 mr-3 p-1"><i class="fa-solid fa-pen"></i></button>
@@ -1213,7 +1261,7 @@
 
                     <div class="border-t-2 border-gray-200 pt-4 mt-2">
                         <h3 class="font-bold text-gray-700 mb-2"><i class="fa-solid fa-book-open text-blue-500 mr-2"></i>Bitácora de Observaciones del Docente (Privado)</h3>
-                        <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" placeholder="Anotaciones privadas (comportamiento, tareas faltantes, etc). Útil para el reporte del Observador." onblur="window.guardarObservacionSilenciosa()" ${!window.esPropietario ? 'disabled' : ''}>${obsText}</textarea>
+                        <textarea id="obs-estudiante" rows="3" class="w-full border rounded p-2 text-sm text-gray-700 outline-none focus:border-blue-500" placeholder="Anotaciones privadas (comportamiento, tareas faltantes, etc). Útil para el reporte del Observador." onblur="window.guardarObservacionSilenciosa()" ${!window.esPropietario ? 'disabled' : ''}>${window.escapeHTML(obsText)}</textarea>
                     </div>
                 `;
                 document.getElementById('contenido-dinamico').innerHTML = html;
@@ -1259,7 +1307,13 @@
             document.getElementById('nota-tema').value = nota.tema;
             document.getElementById('nota-dim').value = nota.dimension;
             document.getElementById('nota-val').value = nota.valor;
-            document.getElementById('nota-asistencia').checked = nota.asistio;
+            
+            let chkAsistio = document.getElementById('nota-asistencia');
+            let chkJustificada = document.getElementById('nota-justificada');
+            
+            chkAsistio.checked = nota.asistio;
+            chkJustificada.disabled = nota.asistio;
+            chkJustificada.checked = nota.justificada === true || nota.justificada === "true";
             
             let btn = document.getElementById('btn-guardar-nota');
             btn.innerHTML = '<i class="fa-solid fa-save mr-1"></i> G.';
@@ -1279,7 +1333,10 @@
             let p = fInp.split('-');
             let fG = `${parseInt(p[2])}/${parseInt(p[1])}/${p[0]}`; 
             
-            let nueva = { fecha: fG, tema: window.lastCriterios.tema, dimension: window.lastCriterios.dimension, valor: document.getElementById('nota-val').value, asistio: document.getElementById('nota-asistencia').checked, periodo: parseInt(window.periodoActivo) };
+            let asistio = document.getElementById('nota-asistencia').checked;
+            let justificada = !asistio && document.getElementById('nota-justificada').checked;
+            
+            let nueva = { fecha: fG, tema: window.lastCriterios.tema, dimension: window.lastCriterios.dimension, valor: document.getElementById('nota-val').value, asistio: asistio, justificada: justificada, periodo: parseInt(window.periodoActivo) };
             
             if (window.notaEnEdicion !== null) {
                 est.notas[window.notaEnEdicion] = nueva;
@@ -1312,8 +1369,8 @@
             panel.innerHTML = `
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4">
                     <div>
-                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800"><i class="fa-solid fa-bolt text-yellow-500 mr-2"></i> Calificación Rápida - Periodo ${window.periodoActivo}</h2>
-                        <p class="text-sm text-gray-500 font-bold">${window.asignaturaActiva} - Grado ${window.appState.gradoActivo}°</p>
+                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800"><i class="fa-solid fa-bolt text-yellow-500 mr-2"></i> Notas Rápido - Periodo ${window.periodoActivo}</h2>
+                        <p class="text-sm text-gray-500 font-bold">${window.escapeHTML(window.asignaturaActiva)} - Grado ${window.appState.gradoActivo}°</p>
                     </div>
                     ${window.esPropietario ? `<button onclick="window.guardarMasivo()" class="bg-green-600 text-white px-6 py-2 rounded font-bold shadow hover:bg-green-500 transition w-full sm:w-auto"><i class="fa-solid fa-save mr-1"></i> Guardar Todo</button>` : `<span class="bg-gray-200 text-gray-500 px-4 py-2 rounded font-bold shadow-inner">Modo Lectura</span>`}
                 </div>
@@ -1335,16 +1392,17 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto bg-white shadow-sm rounded border">
-                    <table class="w-full text-sm border-collapse min-w-[450px]">
+                    <table class="w-full text-sm border-collapse min-w-[550px]">
                         <thead class="bg-gray-800 text-white text-left">
-                            <tr><th class="p-3">Estudiante</th><th class="p-3 w-24 sm:w-32 text-center">Nota</th><th class="p-3 w-20 sm:w-24 text-center">Asistió</th></tr>
+                            <tr><th class="p-3">Estudiante</th><th class="p-3 w-24 text-center">Nota</th><th class="p-3 w-20 text-center">Asistió</th><th class="p-3 w-24 text-center" title="Marcar si trajo excusa">Excusa</th></tr>
                         </thead>
                         <tbody id="m-lista">
                             ${[...ests].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map((e, idx) => `
-                                <tr class="border-b" data-id="${e.id}">
-                                    <td class="p-3 font-medium text-gray-700">${e.nombre}</td>
+                                <tr class="border-b hover:bg-gray-50 transition" data-id="${e.id}">
+                                    <td class="p-3 font-medium text-gray-700">${window.escapeHTML(e.nombre)}</td>
                                     <td class="p-2"><input type="number" id="m-val-${e.id}" step="0.1" min="1.0" max="5.0" class="m-val border rounded p-2 w-full text-center font-bold outline-none focus:border-blue-500" ${!window.esPropietario ? 'disabled' : ''}></td>
-                                    <td class="p-2 text-center"><input type="checkbox" id="m-asis-${e.id}" class="m-asis w-5 h-5 accent-blue-600" checked ${!window.esPropietario ? 'disabled' : ''}></td>
+                                    <td class="p-2 text-center"><input type="checkbox" id="m-asis-${e.id}" class="m-asis w-5 h-5 accent-blue-600" checked onchange="document.getElementById('m-just-${e.id}').disabled = this.checked; if(this.checked) document.getElementById('m-just-${e.id}').checked = false;" ${!window.esPropietario ? 'disabled' : ''}></td>
+                                    <td class="p-2 text-center"><input type="checkbox" id="m-just-${e.id}" class="m-just w-5 h-5 accent-green-500 cursor-pointer" disabled ${!window.esPropietario ? 'disabled' : ''}></td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1366,16 +1424,142 @@
             document.querySelectorAll('#m-lista tr').forEach(fila => {
                 let v = fila.querySelector('.m-val').value;
                 let a = fila.querySelector('.m-asis').checked;
+                let j = !a && fila.querySelector('.m-just').checked;
                 if(!v && !a) v = "1.0";
+                
                 if(v) {
                     let est = window.appState.grados[window.appState.gradoActivo].estudiantes.find(e => e.id === fila.getAttribute('data-id'));
-                    est.notas.push({ fecha: fG, tema, dimension: dim, valor: v, asistio: a, periodo: parseInt(window.periodoActivo) });
+                    est.notas.push({ fecha: fG, tema, dimension: dim, valor: v, asistio: a, justificada: j, periodo: parseInt(window.periodoActivo) });
                 }
             });
             window.guardarEnNube();
             document.getElementById('m-tema').value = '';
             document.querySelectorAll('.m-val').forEach(i=>i.value='');
             window.showToast(`Notas guardadas en Periodo ${window.periodoActivo}`, "success");
+        };
+
+        window.showAsistenciaView = () => {
+            if (window.periodoActivo === 'final') return window.customAlert("Debes seleccionar un periodo específico para llamar a lista.");
+            window.estudianteActivo = null;
+            document.getElementById('mensaje-vacio').classList.add('hidden');
+            const panel = document.getElementById('contenido-dinamico');
+            panel.classList.remove('hidden');
+
+            panel.innerHTML = `
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800"><i class="fa-solid fa-clipboard-user text-teal-600 mr-2"></i> Llamar a Lista - Periodo ${window.periodoActivo}</h2>
+                        <p class="text-sm text-gray-500 font-bold">${window.escapeHTML(window.asignaturaActiva)} - Grado ${window.appState.gradoActivo}°</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <button onclick="window.imprimirReporteAsistencia()" class="bg-gray-800 text-white px-4 py-2 rounded shadow hover:bg-gray-700 text-sm font-bold no-print w-full sm:w-auto"><i class="fa-solid fa-print mr-2"></i>Reporte</button>
+                        ${window.esPropietario ? `<button onclick="window.guardarAsistenciaMasiva()" class="bg-teal-600 text-white px-4 py-2 rounded font-bold shadow hover:bg-teal-500 transition w-full sm:w-auto"><i class="fa-solid fa-save mr-1"></i> Guardar Lista</button>` : `<span class="bg-gray-200 text-gray-500 px-4 py-2 rounded font-bold shadow-inner">Modo Lectura</span>`}
+                    </div>
+                </div>
+                
+                <div class="bg-teal-50 p-4 rounded-lg border border-teal-200 mb-6 shadow-sm">
+                    <label class="block text-xs font-bold text-teal-800 mb-1">Fecha de la clase</label>
+                    <input type="date" id="a-fecha" class="w-full sm:w-48 border-teal-300 rounded p-2 text-sm outline-none font-bold" value="${window.getFechaHoyInput()}" onchange="window.renderAsistenciaTabla()" ${!window.esPropietario ? 'disabled' : ''}>
+                    <p class="text-xs text-teal-600 mt-2"><i class="fa-solid fa-circle-info"></i> Desmarca "Asistió" si el alumno faltó. Esto habilitará la casilla de "Excusa" por si trajo justificativo. Al cambiar la fecha puedes ver y editar faltas anteriores.</p>
+                </div>
+
+                <div class="overflow-x-auto bg-white shadow-sm rounded border">
+                    <table class="w-full text-sm border-collapse min-w-[500px]">
+                        <thead class="bg-teal-800 text-white text-left">
+                            <tr><th class="p-3">#</th><th class="p-3">Estudiante</th><th class="p-3 text-center">¿Asistió?</th><th class="p-3 text-center">¿Trajo Excusa?</th></tr>
+                        </thead>
+                        <tbody id="a-lista">
+                            <!-- Se renderiza via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            window.renderAsistenciaTabla();
+        };
+
+        window.renderAsistenciaTabla = () => {
+            let fInp = document.getElementById('a-fecha').value;
+            let p = fInp.split('-');
+            let fG = `${parseInt(p[2])}/${parseInt(p[1])}/${p[0]}`;
+            let ests = window.appState.grados[window.appState.gradoActivo].estudiantes;
+            
+            let html = [...ests].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map((e, idx) => {
+                let asistio = true;
+                let justificada = false;
+                
+                if(e.registro_asistencia) {
+                    let reg = e.registro_asistencia.find(r => r.fecha === fG && parseInt(r.periodo) === parseInt(window.periodoActivo));
+                    if(reg) {
+                        asistio = reg.asistio === true || reg.asistio === "true";
+                        justificada = reg.justificada === true || reg.justificada === "true";
+                    }
+                }
+
+                return `
+                    <tr class="border-b hover:bg-gray-50" data-id="${e.id}">
+                        <td class="p-3 text-gray-400 font-bold">${idx + 1}</td>
+                        <td class="p-3 font-medium text-gray-700">${window.escapeHTML(e.nombre)}</td>
+                        <td class="p-3 text-center"><input type="checkbox" class="a-asis w-5 h-5 accent-teal-600 cursor-pointer" ${asistio?'checked':''} onchange="document.getElementById('a-just-${e.id}').disabled = this.checked; if(this.checked) document.getElementById('a-just-${e.id}').checked = false;" ${!window.esPropietario ? 'disabled' : ''}></td>
+                        <td class="p-3 text-center"><input type="checkbox" id="a-just-${e.id}" class="a-just w-5 h-5 accent-green-500 cursor-pointer" ${justificada?'checked':''} ${asistio || !window.esPropietario ? 'disabled' : ''}></td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('a-lista').innerHTML = html;
+        };
+
+        window.guardarAsistenciaMasiva = () => {
+            if(!window.esPropietario) return;
+            let fInp = document.getElementById('a-fecha').value;
+            let p = fInp.split('-');
+            let fG = `${parseInt(p[2])}/${parseInt(p[1])}/${p[0]}`;
+
+            document.querySelectorAll('#a-lista tr').forEach(fila => {
+                let idEst = fila.getAttribute('data-id');
+                let asistio = fila.querySelector('.a-asis').checked;
+                let justificada = !asistio && fila.querySelector('.a-just').checked;
+                
+                let est = window.appState.grados[window.appState.gradoActivo].estudiantes.find(e => e.id === idEst);
+                if(!est.registro_asistencia) est.registro_asistencia = [];
+                
+                let existente = est.registro_asistencia.find(r => r.fecha === fG && parseInt(r.periodo) === parseInt(window.periodoActivo));
+                if(existente) {
+                    existente.asistio = asistio;
+                    existente.justificada = justificada;
+                } else {
+                    est.registro_asistencia.push({ fecha: fG, asistio: asistio, justificada: justificada, periodo: parseInt(window.periodoActivo) });
+                }
+            });
+            window.guardarEnNube();
+            window.showToast(`Asistencia guardada para el ${fG}`, "success");
+        };
+
+        window.imprimirReporteAsistencia = () => {
+            let ests = [...window.appState.grados[window.appState.gradoActivo].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+            let style = document.createElement('style'); 
+            style.innerHTML = `@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`; 
+            document.head.appendChild(style);
+            
+            let header = window.getHeaderImpresion(`REPORTE DE INASISTENCIAS - GRADO ${window.appState.gradoActivo}°<br><span style="font-size:10px; font-weight:normal;">ASIGNATURA: ${window.escapeHTML(window.asignaturaActiva)} | PERIODO ${window.periodoActivo}</span>`, "");
+            
+            let html = `<div style="padding: 15px; background: white; font-family: Arial, sans-serif;">${header}
+                <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:20px;">
+                <thead><tr style="background:#0ea5e9; color:white;"><th style="border:1px solid #475569; padding:6px; width:10%;">No.</th><th style="border:1px solid #475569; padding:6px; text-align:left; width:50%;">Estudiante</th><th style="border:1px solid #475569; padding:6px; width:20%;">Fallas Totales</th><th style="border:1px solid #475569; padding:6px; width:20%;">De las cuales Justificadas</th></tr></thead><tbody>`;
+            
+            ests.forEach((e, i) => { 
+                let infoFallas = window.getFallasInfo(e, window.periodoActivo);
+                html += `<tr>
+                    <td style="border:1px solid #475569; text-align:center; padding:4px;">${i+1}</td>
+                    <td style="border:1px solid #475569; padding:4px; font-weight:bold;">${window.escapeHTML(e.nombre)}</td>
+                    <td style="border:1px solid #475569; text-align:center; padding:4px; font-weight:bold; color:red;">${infoFallas.totales}</td>
+                    <td style="border:1px solid #475569; text-align:center; padding:4px; font-weight:bold; color:green;">${infoFallas.justificadas}</td>
+                </tr>`; 
+            });
+            
+            html += `</tbody></table>
+            <div style="margin-top:50px; text-align:center; font-size:10px; font-weight:bold;"><div style="border-top:1px solid black; width:250px; margin:0 auto 5px;"></div>Firma Docente Titular</div></div>`;
+            
+            document.getElementById('vista-impresion').innerHTML = html;
+            setTimeout(() => { window.print(); document.getElementById('vista-impresion').innerHTML = ''; document.head.removeChild(style); }, 200);
         };
 
         window.showGroupStats = () => {
@@ -1400,7 +1584,7 @@
                 <div class="flex justify-between items-center mb-6 border-b pb-4">
                     <div>
                         <h2 class="text-xl sm:text-2xl font-bold text-gray-800"><i class="fa-solid fa-chart-pie text-indigo-500 mr-2"></i> Estadísticas del Grupo</h2>
-                        <p class="text-sm text-gray-500 font-bold">${window.asignaturaActiva} - Grado ${window.appState.gradoActivo}° | ${window.periodoActivo === 'final' ? 'Acumulado Anual' : 'Periodo '+window.periodoActivo}</p>
+                        <p class="text-sm text-gray-500 font-bold">${window.escapeHTML(window.asignaturaActiva)} - Grado ${window.appState.gradoActivo}° | ${window.periodoActivo === 'final' ? 'Acumulado Anual' : 'Periodo '+window.periodoActivo}</p>
                     </div>
                 </div>
                 <div class="flex flex-col items-center justify-center bg-white border p-4 sm:p-6 rounded-lg shadow-sm">
@@ -1439,10 +1623,10 @@
             document.getElementById('panel-derecho').classList.add('w-full');
             document.getElementById('mensaje-vacio').classList.add('hidden');
             
-            document.getElementById('nav-subtitle').innerHTML = `Portal Familiar - Estudiante: <b class="text-yellow-300">${window.datosPadre.nombre}</b>`;
+            document.getElementById('nav-subtitle').innerHTML = `Portal Familiar - Estudiante: <b class="text-yellow-300">${window.escapeHTML(window.datosPadre.nombre)}</b>`;
             document.getElementById('logo-hover-icon').classList.add('hidden');
             
-            window.aplicarLogoUI(); // Activa el logo en la barra superior para los padres
+            window.aplicarLogoUI(); 
 
             const panel = document.getElementById('contenido-dinamico');
             panel.classList.remove('hidden');
@@ -1453,6 +1637,8 @@
             let filasAsignaturas = "";
             let sumaDefinitivas = 0;
             let totalAsignaturas = 0;
+            let totalFallasGeneral = 0;
+            let totalFallasJustificadas = 0;
             let datosGrafico = { materias: [], notas: [] };
             let fotoFamiliar = null;
 
@@ -1465,16 +1651,19 @@
 
                         let promedios = window.calcularPromedios(estAsig.notas, 'final');
                         let des = window.getDesempeno(promedios.def);
+                        let infoFallas = window.getFallasInfo(estAsig, 'final');
                         
                         sumaDefinitivas += parseFloat(promedios.def);
                         totalAsignaturas++;
+                        totalFallasGeneral += infoFallas.totales;
+                        totalFallasJustificadas += infoFallas.justificadas;
 
                         datosGrafico.materias.push(asigNombre);
                         datosGrafico.notas.push(promedios.def);
 
                         filasAsignaturas += `
                             <tr class="border-b hover:bg-gray-50 transition">
-                                <td class="p-3 bg-gray-50 font-bold text-gray-800">${asigNombre}</td>
+                                <td class="p-3 bg-gray-50 font-bold text-gray-800">${window.escapeHTML(asigNombre)}</td>
                                 <td class="p-3 text-center text-gray-600 font-bold">${promedios.p1>0?promedios.p1:'-'}</td>
                                 <td class="p-3 text-center text-gray-600 font-bold">${promedios.p2>0?promedios.p2:'-'}</td>
                                 <td class="p-3 text-center text-gray-600 font-bold">${promedios.p3>0?promedios.p3:'-'}</td>
@@ -1506,13 +1695,14 @@
                         <div class="absolute inset-0 bg-blue-600 h-24 z-0"></div>
                         <div class="relative z-10 pt-4">
                             ${avatarPadre}
-                            <h3 class="font-bold text-lg text-blue-900">${nombre}</h3>
+                            <h3 class="font-bold text-lg text-blue-900">${window.escapeHTML(nombre)}</h3>
                             <p class="text-sm text-blue-600 font-medium mb-4">Grado ${grado}°</p>
                             <div class="bg-white p-3 rounded-lg border shadow-sm">
                                 <p class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase">Promedio Anual General</p>
                                 <p class="text-3xl font-black text-gray-800">${promedioGeneral}</p>
                                 <p class="text-sm font-bold ${desGeneral.color} mt-1">${desGeneral.texto}</p>
                             </div>
+                            <p class="text-xs font-bold mt-4 ${totalFallasGeneral > 0 ? 'text-red-500' : 'text-gray-400'}"><i class="fa-solid fa-user-xmark mr-1"></i> Fallas Anuales: ${totalFallasGeneral} (${totalFallasJustificadas} Justificadas)</p>
                         </div>
                     </div>
                     <div class="w-full md:w-2/3 bg-white border rounded-xl p-4 shadow-sm min-h-[250px]">
@@ -1555,7 +1745,7 @@
                     ${iH}
                     <h1 style="font-size: 15px; margin: 0; font-weight: bold; color: #0f172a;">COLEGIO VIDA SANA REDENSIÓN</h1>
                     <p style="font-size: 10px; margin: 2px 0; color: #334155;">Código del DANE No. 425290002398 aprobado MEN<br>Según Resolución 0007 del 15 de febrero de 2011<br>Finca Chicalá Vereda La Palma Teléfono 3202298188<br>Fusagasugá - Cundinamarca</p>
-                    <h2 style="font-size: 13px; margin: 5px 0 0 0; background: #cbd5e1; border: 1px solid #475569; padding: 3px; font-weight:bold;">${titulo}</h2>
+                    <h2 style="font-size: 13px; margin: 5px 0 0 0; background: #cbd5e1; border: 1px solid #475569; padding: 3px; font-weight:bold;">${window.escapeHTML(titulo)}</h2>
                 </div>
             `;
         };
@@ -1564,7 +1754,8 @@
             let filasAsignaturas = "";
             let sumaDefinitivas = 0;
             let totalAsignaturas = 0;
-            let totalFallas = 0;
+            let totalFallasGeneral = 0;
+            let totalJustificadasGeneral = 0;
 
             for(let asigNombre in window.masterDB) {
                 let asigData = window.masterDB[asigNombre];
@@ -1572,18 +1763,19 @@
                     let estAsig = asigData.grados[grado].estudiantes.find(e => e.nombre.toLowerCase() === estNombre.toLowerCase());
                     if(estAsig) {
                         let promedios = window.calcularPromedios(estAsig.notas, 'final'); 
+                        let infoFallas = window.getFallasInfo(estAsig, periodoReporte);
                         
                         let dbaHTML = "";
                         if (periodoReporte === 'final') {
                             let dbas = [];
-                            if(asigData.grados[grado].dba["1"]) dbas.push(`<b>P1:</b> ${asigData.grados[grado].dba["1"]}`);
-                            if(asigData.grados[grado].dba["2"]) dbas.push(`<b>P2:</b> ${asigData.grados[grado].dba["2"]}`);
-                            if(asigData.grados[grado].dba["3"]) dbas.push(`<b>P3:</b> ${asigData.grados[grado].dba["3"]}`);
-                            if(asigData.grados[grado].dba["4"]) dbas.push(`<b>P4:</b> ${asigData.grados[grado].dba["4"]}`);
+                            if(asigData.grados[grado].dba["1"]) dbas.push(`<b>P1:</b> ${window.escapeHTML(asigData.grados[grado].dba["1"])}`);
+                            if(asigData.grados[grado].dba["2"]) dbas.push(`<b>P2:</b> ${window.escapeHTML(asigData.grados[grado].dba["2"])}`);
+                            if(asigData.grados[grado].dba["3"]) dbas.push(`<b>P3:</b> ${window.escapeHTML(asigData.grados[grado].dba["3"])}`);
+                            if(asigData.grados[grado].dba["4"]) dbas.push(`<b>P4:</b> ${window.escapeHTML(asigData.grados[grado].dba["4"])}`);
                             dbaHTML = dbas.length > 0 ? dbas.join("<br>") : "<span style='color:#9ca3af; font-style:italic;'>Sin indicador registrado.</span>";
                         } else {
                             let val = asigData.grados[grado].dba[periodoReporte];
-                            dbaHTML = (val && val !== "[object Object]") ? val : "<span style='color:#9ca3af; font-style:italic;'>Sin indicador registrado.</span>";
+                            dbaHTML = (val && val !== "[object Object]") ? window.escapeHTML(val) : "<span style='color:#9ca3af; font-style:italic;'>Sin indicador registrado.</span>";
                         }
                         
                         let ihsAsig = asigData.ihs || 2;
@@ -1591,14 +1783,13 @@
                         sumaDefinitivas += parseFloat(promedios.def);
                         totalAsignaturas++;
                         
-                        let fallasAcumuladas = 0;
-                        estAsig.notas.forEach(n => { if(!n.asistio) fallasAcumuladas++; });
-                        totalFallas += fallasAcumuladas;
+                        totalFallasGeneral += infoFallas.totales;
+                        totalJustificadasGeneral += infoFallas.justificadas;
 
                         filasAsignaturas += `
                             <tr>
                                 <td style="border:1px solid #475569; padding:0; font-weight:bold; background-color:#e0f2fe; color:#0f172a; width:10%; height: 70px;">
-                                    <div class="texto-vertical" style="height:100%; width:100%; margin:auto;">${asigNombre.toUpperCase()}</div>
+                                    <div class="texto-vertical" style="height:100%; width:100%; margin:auto;">${window.escapeHTML(asigNombre).toUpperCase()}</div>
                                 </td>
                                 <td style="border:1px solid #475569; padding:6px; font-size:10px; text-align:justify; color:#1e293b; width:53%;">${dbaHTML}</td>
                                 <td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:5%;">${ihsAsig}</td>
@@ -1623,6 +1814,7 @@
             else if (desGeneral.texto === "Bajo") reco = "Presenta dificultades en su proceso. Es necesario un mayor acompañamiento y compromiso familiar.";
 
             let nombreDocente = user && user.displayName ? user.displayName.toUpperCase() : (user && user.email ? user.email.split('@')[0].toUpperCase() : 'DOCENTE CVS');
+            let strFallas = `${totalFallasGeneral} (${totalJustificadasGeneral} Justificadas)`;
 
             return `
                 <div style="page-break-after: always; padding: 10px 15px; font-family: Arial, sans-serif; color: #000; background: white;">
@@ -1631,13 +1823,13 @@
                     <table style="width:100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px; border: 1px solid #475569;">
                         <tr>
                             <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:15%;">NOMBRE</td>
-                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:55%; text-transform:uppercase;">${estNombre}</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:55%; text-transform:uppercase;">${window.escapeHTML(estNombre)}</td>
                             <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:15%;">GRADO</td>
                             <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:15%; text-align:center;">${grado}°</td>
                         </tr>
                         <tr>
                             <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:15%;">DOCENTE</td>
-                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:55%; text-transform:uppercase;">${nombreDocente}</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:55%; text-transform:uppercase;">${window.escapeHTML(nombreDocente)}</td>
                             <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:15%;">AÑO LECTIVO</td>
                             <td style="border:1px solid #475569; padding:4px; font-weight:bold; width:15%; text-align:center;">${new Date().getFullYear()}</td>
                         </tr>
@@ -1668,8 +1860,8 @@
 
                     <table style="width:100%; border-collapse: collapse; font-size: 10px; margin-top: 8px;">
                         <tr>
-                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:20%;">FALLAS</td>
-                            <td style="border:1px solid #475569; padding:4px; text-align:center; width:30%; font-weight:bold;">${totalFallas}</td>
+                            <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:20%;">FALLAS ACUM.</td>
+                            <td style="border:1px solid #475569; padding:4px; text-align:center; width:30%; font-weight:bold; color:red;">${strFallas}</td>
                             <td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:20%;">NIVEL DE DESEMPEÑO</td>
                             <td style="border:1px solid #475569; padding:4px; text-align:center; font-weight:bold; width:30%;">${desGeneral.texto.toUpperCase()}</td>
                         </tr>
@@ -1721,12 +1913,12 @@
                         if((obs1 && obs1 !== "[object Object]") || (obs2 && obs2 !== "[object Object]") || (obs3 && obs3 !== "[object Object]") || (obs4 && obs4 !== "[object Object]")) {
                             tieneObservaciones = true;
                             filasObservaciones += `
-                                <tr style="background:#e0f2fe;"><th colspan="2" style="border:1px solid #475569; padding:6px; text-align:left; font-weight:bold;">Asignatura: ${asigNombre.toUpperCase()}</th></tr>
+                                <tr style="background:#e0f2fe;"><th colspan="2" style="border:1px solid #475569; padding:6px; text-align:left; font-weight:bold;">Asignatura: ${window.escapeHTML(asigNombre).toUpperCase()}</th></tr>
                             `;
-                            if(obs1 && obs1 !== "[object Object]") filasObservaciones += `<tr><td style="border:1px solid #475569; padding:6px; font-weight:bold; width:15%; text-align:center;">Periodo 1</td><td style="border:1px solid #475569; padding:6px; text-align:justify;">${obs1}</td></tr>`;
-                            if(obs2 && obs2 !== "[object Object]") filasObservaciones += `<tr><td style="border:1px solid #475569; padding:6px; font-weight:bold; width:15%; text-align:center;">Periodo 2</td><td style="border:1px solid #475569; padding:6px; text-align:justify;">${obs2}</td></tr>`;
-                            if(obs3 && obs3 !== "[object Object]") filasObservaciones += `<tr><td style="border:1px solid #475569; padding:6px; font-weight:bold; width:15%; text-align:center;">Periodo 3</td><td style="border:1px solid #475569; padding:6px; text-align:justify;">${obs3}</td></tr>`;
-                            if(obs4 && obs4 !== "[object Object]") filasObservaciones += `<tr><td style="border:1px solid #475569; padding:6px; font-weight:bold; width:15%; text-align:center;">Periodo 4</td><td style="border:1px solid #475569; padding:6px; text-align:justify;">${obs4}</td></tr>`;
+                            if(obs1 && obs1 !== "[object Object]") filasObservaciones += `<tr><td style="border:1px solid #475569; padding:6px; font-weight:bold; width:15%; text-align:center;">Periodo 1</td><td style="border:1px solid #475569; padding:6px; text-align:justify;">${window.escapeHTML(obs1)}</td></tr>`;
+                            if(obs2 && obs2 !== "[object Object]") filasObservaciones += `<tr><td style="border:1px solid #475569; padding:6px; font-weight:bold; width:15%; text-align:center;">Periodo 2</td><td style="border:1px solid #475569; padding:6px; text-align:justify;">${window.escapeHTML(obs2)}</td></tr>`;
+                            if(obs3 && obs3 !== "[object Object]") filasObservaciones += `<tr><td style="border:1px solid #475569; padding:6px; font-weight:bold; width:15%; text-align:center;">Periodo 3</td><td style="border:1px solid #475569; padding:6px; text-align:justify;">${window.escapeHTML(obs3)}</td></tr>`;
+                            if(obs4 && obs4 !== "[object Object]") filasObservaciones += `<tr><td style="border:1px solid #475569; padding:6px; font-weight:bold; width:15%; text-align:center;">Periodo 4</td><td style="border:1px solid #475569; padding:6px; text-align:justify;">${window.escapeHTML(obs4)}</td></tr>`;
                         }
                     }
                 }
@@ -1745,13 +1937,13 @@
                     <table style="width:100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; border: 1px solid #475569;">
                         <tr>
                             <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#e0f2fe; width:15%;">NOMBRE</td>
-                            <td style="border:1px solid #475569; padding:6px; font-weight:bold; width:55%; text-transform:uppercase;">${estNombre}</td>
+                            <td style="border:1px solid #475569; padding:6px; font-weight:bold; width:55%; text-transform:uppercase;">${window.escapeHTML(estNombre)}</td>
                             <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#e0f2fe; width:15%;">GRADO</td>
                             <td style="border:1px solid #475569; padding:6px; font-weight:bold; width:15%; text-align:center;">${grado}°</td>
                         </tr>
                         <tr>
                             <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#e0f2fe; width:15%;">DOCENTE</td>
-                            <td style="border:1px solid #475569; padding:6px; font-weight:bold; width:55%; text-transform:uppercase;">${nombreDocente}</td>
+                            <td style="border:1px solid #475569; padding:6px; font-weight:bold; width:55%; text-transform:uppercase;">${window.escapeHTML(nombreDocente)}</td>
                             <td style="border:1px solid #475569; padding:6px; font-weight:bold; background:#e0f2fe; width:15%;">AÑO LECTIVO</td>
                             <td style="border:1px solid #475569; padding:6px; font-weight:bold; width:15%; text-align:center;">${new Date().getFullYear()}</td>
                         </tr>
@@ -1871,7 +2063,7 @@
             style.innerHTML = `@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`;
             document.head.appendChild(style);
 
-            let header = window.getHeaderImpresion(`PLANILLA - GRADO ${window.appState.gradoActivo}°<br><span style="font-size:10px; font-weight:normal;">ASIGNATURA: ${window.asignaturaActiva} | ${strPeriodo}</span>`);
+            let header = window.getHeaderImpresion(`PLANILLA - GRADO ${window.appState.gradoActivo}°<br><span style="font-size:10px; font-weight:normal;">ASIGNATURA: ${window.escapeHTML(window.asignaturaActiva)} | ${strPeriodo}</span>`, "");
 
             let html = `<div style="padding: 15px; background: white; font-family: Arial, sans-serif;">${header}
                 <table style="width:100%; border-collapse:collapse; font-size:10px; margin-top:10px;">
@@ -1886,9 +2078,10 @@
             ests.forEach((e, i) => {
                 let p = window.calcularPromedios(e.notas, window.periodoActivo);
                 if(window.periodoActivo === 'final') {
-                    html += `<tr><td style="border:1px solid #475569; text-align:center;">${i+1}</td><td style="border:1px solid #475569; padding:4px;"><b>${e.nombre}</b></td><td style="border:1px solid #475569; text-align:center;">${p.p1>0?p.p1:''}</td><td style="border:1px solid #475569; text-align:center;">${p.p2>0?p.p2:''}</td><td style="border:1px solid #475569; text-align:center;">${p.p3>0?p.p3:''}</td><td style="border:1px solid #475569; text-align:center;">${p.p4>0?p.p4:''}</td><td style="border:1px solid #475569; text-align:center; font-weight:bold; background:#f8fafc;">${p.def}</td></tr>`;
+                    html += `<tr><td style="border:1px solid #475569; text-align:center;">${i+1}</td><td style="border:1px solid #475569; padding:4px;"><b>${window.escapeHTML(e.nombre)}</b></td><td style="border:1px solid #475569; text-align:center;">${p.p1>0?p.p1:''}</td><td style="border:1px solid #475569; text-align:center;">${p.p2>0?p.p2:''}</td><td style="border:1px solid #475569; text-align:center;">${p.p3>0?p.p3:''}</td><td style="border:1px solid #475569; text-align:center;">${p.p4>0?p.p4:''}</td><td style="border:1px solid #475569; text-align:center; font-weight:bold; background:#f8fafc;">${p.def}</td></tr>`;
                 } else {
-                    html += `<tr><td style="border:1px solid #475569; text-align:center;">${i+1}</td><td style="border:1px solid #475569; padding:4px;"><b>${e.nombre}</b></td><td style="border:1px solid #475569; text-align:center;">${p.comp}</td><td style="border:1px solid #475569; text-align:center;">${p.part}</td><td style="border:1px solid #475569; text-align:center;">${p.act}</td><td style="border:1px solid #475569; text-align:center;">${p.exa}</td><td style="border:1px solid #475569; text-align:center; font-weight:bold; background:#f8fafc;">${p.def}</td><td style="border:1px solid #475569; text-align:center;">${p.totalClases>0?((100-p.asistencia)/100*p.totalClases).toFixed(0):0}</td></tr>`;
+                    let infoFallas = window.getFallasInfo(e, window.periodoActivo);
+                    html += `<tr><td style="border:1px solid #475569; text-align:center;">${i+1}</td><td style="border:1px solid #475569; padding:4px;"><b>${window.escapeHTML(e.nombre)}</b></td><td style="border:1px solid #475569; text-align:center;">${p.comp}</td><td style="border:1px solid #475569; text-align:center;">${p.part}</td><td style="border:1px solid #475569; text-align:center;">${p.act}</td><td style="border:1px solid #475569; text-align:center;">${p.exa}</td><td style="border:1px solid #475569; text-align:center; font-weight:bold; background:#f8fafc;">${p.def}</td><td style="border:1px solid #475569; text-align:center; color:red; font-weight:bold;">${infoFallas.totales}</td></tr>`;
                 }
             });
             html += `</tbody></table><div class="mt-16 flex justify-around text-center text-xs" style="display:flex!important; page-break-inside:avoid; margin-top:50px;"><div><div style="border-top:1px solid black; width:200px; margin:0 auto 5px;"></div>Firma Docente</div><div><div style="border-top:1px solid black; width:200px; margin:0 auto 5px;"></div>Coordinación Académica</div></div></div>`;
@@ -1908,17 +2101,19 @@
             if(ests.length===0) return window.customAlert("No hay estudiantes.");
             
             let c = window.periodoActivo === 'final' ? 
-                "Estudiante,P1,P2,P3,P4,Definitiva Anual,Desempeno,Asistencia%,PIN Padres\n" : 
-                "Estudiante,Compromiso(30%),Participacion(10%),Actitud(20%),Examen(40%),Definitiva,Desempeno,Asistencia%,PIN Padres,Bitacora Privada\n";
+                "Estudiante,P1,P2,P3,P4,Definitiva Anual,Desempeno,Fallas Totales,PIN Padres\n" : 
+                "Estudiante,Compromiso(30%),Participacion(10%),Actitud(20%),Examen(40%),Definitiva,Desempeno,Fallas Totales,Fallas Justificadas,PIN Padres,Bitacora Privada\n";
             
             ests.forEach(e => {
                 let p = window.calcularPromedios(e.notas, window.periodoActivo);
                 let d = window.getDesempeno(p.def).texto;
+                let infoFallas = window.getFallasInfo(e, window.periodoActivo);
+
                 if(window.periodoActivo === 'final') {
-                    c += `${e.nombre},${p.p1},${p.p2},${p.p3},${p.p4},${p.def},${d},${p.asistencia}%,${e.pin || '0000'}\n`;
+                    c += `${window.escapeHTML(e.nombre)},${p.p1},${p.p2},${p.p3},${p.p4},${p.def},${d},${infoFallas.totales},${e.pin || '0000'}\n`;
                 } else {
                     let obs = (e.observacion && typeof e.observacion === 'object' && e.observacion[window.periodoActivo] && e.observacion[window.periodoActivo] !== "[object Object]") ? e.observacion[window.periodoActivo].replace(/,/g, " ") : "";
-                    c += `${e.nombre},${p.comp},${p.part},${p.act},${p.exa},${p.def},${d},${p.asistencia}%,${e.pin || '0000'},${obs}\n`;
+                    c += `${window.escapeHTML(e.nombre)},${p.comp},${p.part},${p.act},${p.exa},${p.def},${d},${infoFallas.totales},${infoFallas.justificadas},${e.pin || '0000'},${window.escapeHTML(obs)}\n`;
                 }
             });
             const blob = new Blob(["\uFEFF" + c], { type: 'text/csv;charset=utf-8;' });
