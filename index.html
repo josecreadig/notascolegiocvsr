@@ -288,7 +288,7 @@
             return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
         };
 
-        // ESCUDO ANTI-BORRADO: Protege lo que el docente está escribiendo.
+        // ESCUDO ANTI-BORRADO PROFUNDO: Protege lo que el docente está escribiendo.
         window.focoActivoId = null;
         window.focoValor = null;
 
@@ -666,8 +666,7 @@
             window.aplicarLogoUI();
             window.renderListaEstudiantes();
             
-            // --- ESCUDO ANTI-BORRADO PROFUNDO ---
-            // Evita que Firebase recargue la pantalla si el profe está digitando notas masivas o en un perfil
+            // ESCUDO PROFUNDO PARA LAS NOTAS MASIVAS
             let isMasivaDirty = false;
             if (document.getElementById('m-tema')) {
                 if (document.getElementById('m-tema').value.trim() !== '') isMasivaDirty = true;
@@ -902,9 +901,8 @@
             });
         };
 
-        // --- CALCULO INTELIGENTE DE FALLAS (Agrupa por fecha) ---
         window.getFallasInfo = (est, periodoReq) => {
-            let fechasFaltas = {}; // Almacena 'DD/MM/YYYY' -> esJustificada (true/false)
+            let fechasFaltas = {}; // Agrupa 'DD/MM/YYYY' -> esJustificada (true/false)
             
             const procesar = (arr) => {
                 if(!arr) return;
@@ -912,7 +910,6 @@
                     if(periodoReq === 'final' || parseInt(item.periodo) === parseInt(periodoReq)) {
                         if(item.asistio === false || item.asistio === "false") {
                             let isJust = (item.justificada === true || item.justificada === "true");
-                            // Si el niño ya tiene falta ese día, chequeamos si ALGUNA de las notas justifica el día.
                             if (fechasFaltas[item.fecha] !== undefined) {
                                 fechasFaltas[item.fecha] = fechasFaltas[item.fecha] || isJust;
                             } else {
@@ -923,13 +920,13 @@
                 });
             };
             
-            procesar(est.notas);
-            procesar(est.registro_asistencia);
+            procesar(est.notas); // Suma las inasistencias de notas
+            procesar(est.registro_asistencia); // Suma las de lista
             
             let fallasTotales = Object.keys(fechasFaltas).length;
             let fallasJustificadas = Object.values(fechasFaltas).filter(j => j).length;
             
-            // Construimos un array de texto para el reporte PDF detallado
+            // Array para imprimir fechas en el reporte PDF
             let detalleArray = [];
             for (const [fecha, isJust] of Object.entries(fechasFaltas)) {
                 detalleArray.push(`${fecha} ${isJust ? '(Excusa)' : '(Injustificada)'}`);
@@ -939,7 +936,8 @@
                 totales: fallasTotales, 
                 justificadas: fallasJustificadas, 
                 injustificadas: fallasTotales - fallasJustificadas,
-                detalle: detalleArray
+                detalle: detalleArray,
+                fechas: fechasFaltas // Exporta las fechas para el cerebro del boletín
             };
         };
 
@@ -1113,10 +1111,7 @@
                 const ctx = document.getElementById('grafico-estudiante').getContext('2d');
                 chartInstance = new Chart(ctx, {
                     type: 'bar',
-                    data: {
-                        labels: ['Periodo 1', 'Periodo 2', 'Periodo 3', 'Periodo 4'],
-                        datasets: [{ label: 'Nota Definitiva', data: [p.p1, p.p2, p.p3, p.p4], backgroundColor: '#3b82f6', borderRadius: 4 }]
-                    },
+                    data: { labels: ['Periodo 1', 'Periodo 2', 'Periodo 3', 'Periodo 4'], datasets: [{ label: 'Nota Definitiva', data: [p.p1, p.p2, p.p3, p.p4], backgroundColor: '#3b82f6', borderRadius: 4 }] },
                     options: { animation: false, scales: { y: { min: 0, max: 5 } }, plugins: { legend: { display: false } }, maintainAspectRatio: false }
                 });
 
@@ -1239,14 +1234,7 @@
                 const ctx = document.getElementById('grafico-estudiante').getContext('2d');
                 chartInstance = new Chart(ctx, {
                     type: 'radar',
-                    data: {
-                        labels: ['Compromiso', 'Participación', 'Actitud', 'Examen'],
-                        datasets: [{
-                            label: 'Desempeño',
-                            data: [p.comp, p.part, p.act, p.exa],
-                            backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', pointBackgroundColor: 'rgba(59, 130, 246, 1)', borderWidth: 2
-                        }]
-                    },
+                    data: { labels: ['Compromiso', 'Participación', 'Actitud', 'Examen'], datasets: [{ label: 'Desempeño', data: [p.comp, p.part, p.act, p.exa], backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', pointBackgroundColor: 'rgba(59, 130, 246, 1)', borderWidth: 2 }] },
                     options: { animation: false, scales: { r: { min: 0, max: 5, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } }, maintainAspectRatio: false }
                 });
             }
@@ -1307,6 +1295,7 @@
 
         window.showMassiveView = () => {
             if (window.periodoActivo === 'final') return window.customAlert("No puedes usar calificación rápida en Acumulado Anual.");
+            
             window.estudianteActivo = null; document.getElementById('mensaje-vacio').classList.add('hidden');
             const panel = document.getElementById('contenido-dinamico'); panel.classList.remove('hidden');
 
@@ -1367,19 +1356,15 @@
             let dim = document.getElementById('m-dim').value;
 
             document.querySelectorAll('#m-lista tr').forEach(fila => {
-                let v = fila.querySelector('.m-val').value;
-                let a = fila.querySelector('.m-asis').checked;
-                let j = !a && fila.querySelector('.m-just').checked;
+                let v = fila.querySelector('.m-val').value; let a = fila.querySelector('.m-asis').checked; let j = !a && fila.querySelector('.m-just').checked;
                 if(!v && !a) v = "1.0";
-                
                 if(v) {
                     let est = window.appState.grados[window.appState.gradoActivo].estudiantes.find(e => e.id === fila.getAttribute('data-id'));
                     est.notas.push({ fecha: fG, tema, dimension: dim, valor: v, asistio: a, justificada: j, periodo: parseInt(window.periodoActivo) });
                 }
             });
             window.guardarEnNube(); document.getElementById('m-tema').value = '';
-            document.querySelectorAll('.m-val').forEach(i=>i.value='');
-            window.showToast(`Notas guardadas en Periodo ${window.periodoActivo}`, "success");
+            document.querySelectorAll('.m-val').forEach(i=>i.value=''); window.showToast(`Notas guardadas en Periodo ${window.periodoActivo}`, "success");
         };
 
         window.showAsistenciaView = () => {
@@ -1527,10 +1512,7 @@
             const ctx = document.getElementById('grafico-grupal').getContext('2d');
             chartInstance = new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: ['Superior', 'Alto', 'Básico', 'Bajo', 'Sin Evaluar'],
-                    datasets: [{ label: 'Estudiantes', data: [conteo.superior, conteo.alto, conteo.basico, conteo.bajo, conteo.sin], backgroundColor: ['#9333ea', '#16a34a', '#ca8a04', '#dc2626', '#9ca3af'], borderRadius: 4 }]
-                },
+                data: { labels: ['Superior', 'Alto', 'Básico', 'Bajo', 'Sin Evaluar'], datasets: [{ label: 'Estudiantes', data: [conteo.superior, conteo.alto, conteo.basico, conteo.bajo, conteo.sin], backgroundColor: ['#9333ea', '#16a34a', '#ca8a04', '#dc2626', '#9ca3af'], borderRadius: 4 }] },
                 options: { animation: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, maintainAspectRatio: false }
             });
         };
@@ -1542,15 +1524,16 @@
             
             document.getElementById('nav-subtitle').innerHTML = `Portal Familiar - Estudiante: <b class="text-yellow-300">${window.escapeHTML(window.datosPadre.nombre)}</b>`;
             document.getElementById('logo-hover-icon').classList.add('hidden');
-            
             window.aplicarLogoUI(); 
 
-            const panel = document.getElementById('contenido-dinamico');
-            panel.classList.remove('hidden');
-
+            const panel = document.getElementById('contenido-dinamico'); panel.classList.remove('hidden');
             let grado = window.datosPadre.grado; let nombre = window.datosPadre.nombre;
-            let filasAsignaturas = ""; let sumaDefinitivas = 0; let totalAsignaturas = 0; let totalFallasGeneral = 0; let totalFallasJustificadas = 0;
+            
+            let filasAsignaturas = ""; let sumaDefinitivas = 0; let totalAsignaturas = 0; 
             let datosGrafico = { materias: [], notas: [] }; let fotoFamiliar = null;
+            
+            // Usamos un objeto global para capturar las fechas de fallas de TODAS las materias
+            let globalFechasFaltas = {};
 
             for(let asigNombre in window.masterDB) {
                 let asigData = window.masterDB[asigNombre];
@@ -1563,7 +1546,16 @@
                         let des = window.getDesempeno(promedios.def);
                         let infoFallas = window.getFallasInfo(estAsig, 'final');
                         
-                        sumaDefinitivas += parseFloat(promedios.def); totalAsignaturas++; totalFallasGeneral += infoFallas.totales; totalFallasJustificadas += infoFallas.justificadas;
+                        // Agregar las fechas de esta materia al global
+                        for (const [fecha, isJust] of Object.entries(infoFallas.fechas)) {
+                            if (globalFechasFaltas[fecha] !== undefined) {
+                                globalFechasFaltas[fecha] = globalFechasFaltas[fecha] || isJust;
+                            } else {
+                                globalFechasFaltas[fecha] = isJust;
+                            }
+                        }
+                        
+                        sumaDefinitivas += parseFloat(promedios.def); totalAsignaturas++;
                         datosGrafico.materias.push(asigNombre); datosGrafico.notas.push(promedios.def);
 
                         filasAsignaturas += `
@@ -1581,6 +1573,8 @@
                 }
             }
 
+            let totalFallasGeneral = Object.keys(globalFechasFaltas).length;
+            let totalJustificadasGeneral = Object.values(globalFechasFaltas).filter(j=>j).length;
             let promedioGeneral = totalAsignaturas > 0 ? (sumaDefinitivas / totalAsignaturas).toFixed(1) : "0.0";
             let desGeneral = window.getDesempeno(promedioGeneral);
             let avatarPadre = fotoFamiliar ? `<img src="${fotoFamiliar}" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover mx-auto mb-3 border-4 border-white shadow-lg bg-white">` : `<i class="fa-solid fa-user-graduate text-5xl text-blue-300 mb-3"></i>`;
@@ -1606,7 +1600,7 @@
                                 <p class="text-3xl font-black text-gray-800">${promedioGeneral}</p>
                                 <p class="text-sm font-bold ${desGeneral.color} mt-1">${desGeneral.texto}</p>
                             </div>
-                            <p class="text-xs font-bold mt-4 ${totalFallasGeneral > 0 ? 'text-red-500' : 'text-gray-400'}"><i class="fa-solid fa-user-xmark mr-1"></i> Fallas Anuales: ${totalFallasGeneral} (${totalFallasJustificadas} Justificadas)</p>
+                            <p class="text-xs font-bold mt-4 ${totalFallasGeneral > 0 ? 'text-red-500' : 'text-gray-400'}"><i class="fa-solid fa-user-xmark mr-1"></i> Días de Inasistencia: ${totalFallasGeneral} (${totalJustificadasGeneral} Excusas)</p>
                         </div>
                     </div>
                     <div class="w-full md:w-2/3 bg-white border rounded-xl p-4 shadow-sm min-h-[250px]">
@@ -1644,7 +1638,10 @@
         };
 
         window.obtenerHTMLBoletin = (estNombre, estPIN, grado, periodoReporte) => {
-            let filasAsignaturas = ""; let sumaDefinitivas = 0; let totalAsignaturas = 0; let totalFallasGeneral = 0; let totalJustificadasGeneral = 0;
+            let filasAsignaturas = ""; let sumaDefinitivas = 0; let totalAsignaturas = 0; 
+            
+            // Usamos un diccionario global para extraer los días únicos faltados en toda la escuela
+            let globalFechasFaltas = {};
 
             for(let asigNombre in window.masterDB) {
                 let asigData = window.masterDB[asigNombre];
@@ -1653,6 +1650,15 @@
                     if(estAsig) {
                         let promedios = window.calcularPromedios(estAsig.notas, 'final'); 
                         let infoFallas = window.getFallasInfo(estAsig, periodoReporte);
+                        
+                        // Agregar las fechas de esta materia al global del boletín
+                        for (const [fecha, isJust] of Object.entries(infoFallas.fechas)) {
+                            if (globalFechasFaltas[fecha] !== undefined) {
+                                globalFechasFaltas[fecha] = globalFechasFaltas[fecha] || isJust;
+                            } else {
+                                globalFechasFaltas[fecha] = isJust;
+                            }
+                        }
                         
                         let dbaHTML = "";
                         if (periodoReporte === 'final') {
@@ -1683,12 +1689,15 @@
                         let ihsAsig = asigData.ihs || 2;
                         
                         sumaDefinitivas += parseFloat(defFinalCalculada); totalAsignaturas++;
-                        totalFallasGeneral += infoFallas.totales; totalJustificadasGeneral += infoFallas.justificadas;
 
                         filasAsignaturas += `<tr><td style="border:1px solid #475569; padding:0; font-weight:bold; background-color:#e0f2fe; color:#0f172a; width:10%; height: 70px;"><div class="texto-vertical" style="height:100%; width:100%; margin:auto;">${window.escapeHTML(asigNombre).toUpperCase()}</div></td><td style="border:1px solid #475569; padding:6px; font-size:10px; text-align:justify; color:#1e293b; width:53%;">${dbaHTML}</td><td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:5%;">${ihsAsig}</td><td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:6%;">${p1_val}</td><td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:6%;">${p2_val}</td><td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:6%;">${p3_val}</td><td style="border:1px solid #475569; padding:6px; text-align:center; font-weight:bold; color:#1e293b; width:6%;">${p4_val}</td><td style="border:1px solid #475569; padding:6px; text-align:center; font-size:12px; font-weight:900; background-color:#f1f5f9; color:#0f172a; width:8%;">${defFinalCalculada}</td></tr>`;
                     }
                 }
             }
+
+            // Calculamos los días únicos de falta que se detectaron cruzando materias
+            let totalFallasGeneral = Object.keys(globalFechasFaltas).length;
+            let totalJustificadasGeneral = Object.values(globalFechasFaltas).filter(j=>j).length;
 
             let promedioGeneral = totalAsignaturas > 0 ? (sumaDefinitivas / totalAsignaturas).toFixed(1) : "0.0";
             let desGeneral = window.getDesempeno(promedioGeneral);
@@ -1700,7 +1709,7 @@
             else if (desGeneral.texto === "Bajo") reco = "Presenta dificultades en su proceso. Es necesario un mayor acompañamiento y compromiso familiar.";
 
             let nombreDocente = user && user.displayName ? user.displayName.toUpperCase() : (user && user.email ? user.email.split('@')[0].toUpperCase() : 'DOCENTE CVS');
-            let strFallas = `${totalFallasGeneral} (${totalJustificadasGeneral} Justificadas)`;
+            let strFallas = `${totalFallasGeneral} Días (${totalJustificadasGeneral} Excusas)`;
             let tituloBoletin = periodoReporte === 'final' ? "INFORME PEDAGÓGICO ACUMULADO ANUAL" : "INFORME PEDAGÓGICO - PERIODO " + periodoReporte;
 
             return `
@@ -1715,7 +1724,7 @@
                         <tfoot><tr><td colspan="3" style="border:1px solid #475569; padding:4px; text-align:right; font-weight:bold; background:#e2e8f0; color:#0f172a;">PROMEDIO GENERAL:</td><td colspan="4" style="border:1px solid #475569; padding:4px; text-align:center; font-weight:bold; background:#f1f5f9;"></td><td style="border:1px solid #475569; padding:4px; text-align:center; font-size:13px; font-weight:bold; background:#e2e8f0; color:#0f172a;">${promedioGeneral}</td></tr></tfoot>
                     </table>
 
-                    <table style="width:100%; border-collapse: collapse; font-size: 10px; margin-top: 8px;"><tr><td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:20%;">FALLAS ACUM.</td><td style="border:1px solid #475569; padding:4px; text-align:center; width:30%; font-weight:bold; color:red;">${strFallas}</td><td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:20%;">NIVEL DE DESEMPEÑO</td><td style="border:1px solid #475569; padding:4px; text-align:center; font-weight:bold; width:30%;">${desGeneral.texto.toUpperCase()}</td></tr></table>
+                    <table style="width:100%; border-collapse: collapse; font-size: 10px; margin-top: 8px;"><tr><td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:20%;">DÍAS AUSENTE</td><td style="border:1px solid #475569; padding:4px; text-align:center; width:30%; font-weight:bold; color:red;">${strFallas}</td><td style="border:1px solid #475569; padding:4px; font-weight:bold; background:#e0f2fe; width:20%;">NIVEL DE DESEMPEÑO</td><td style="border:1px solid #475569; padding:4px; text-align:center; font-weight:bold; width:30%;">${desGeneral.texto.toUpperCase()}</td></tr></table>
 
                     <div style="display:flex; margin-top:8px; gap:8px;">
                         <table style="width:40%; border-collapse: collapse; font-size: 9px; border:1px solid #475569;"><tr><th colspan="3" style="border:1px solid #475569; background:#f1f5f9; padding:3px;">CRITERIOS DE EVALUACIÓN</th></tr><tr><td style="border:1px solid #475569; padding:3px;">4.60 - 5.00</td><td style="border:1px solid #475569; padding:3px;">DESEMPEÑO SUPERIOR</td><td style="border:1px solid #475569; padding:3px; font-weight:bold;">D.S</td></tr><tr><td style="border:1px solid #475569; padding:3px; background:#e0f2fe;">4.00 - 4.59</td><td style="border:1px solid #475569; padding:3px; background:#e0f2fe;">DESEMPEÑO ALTO</td><td style="border:1px solid #475569; padding:3px; background:#e0f2fe; font-weight:bold;">D.A</td></tr><tr><td style="border:1px solid #475569; padding:3px;">3.00 - 3.99</td><td style="border:1px solid #475569; padding:3px;">DESEMPEÑO BÁSICO</td><td style="border:1px solid #475569; padding:3px; font-weight:bold;">D.BAS</td></tr><tr><td style="border:1px solid #475569; padding:3px; background:#fee2e2;">1.00 - 2.99</td><td style="border:1px solid #475569; padding:3px; background:#fee2e2;">DESEMPEÑO BAJO</td><td style="border:1px solid #475569; padding:3px; background:#fee2e2; font-weight:bold;">D.B</td></tr></table>
@@ -1819,7 +1828,7 @@
             if(window.periodoActivo === 'final') {
                 html += `<th style="border:1px solid #475569; padding:4px;">P1</th><th style="border:1px solid #475569; padding:4px;">P2</th><th style="border:1px solid #475569; padding:4px;">P3</th><th style="border:1px solid #475569; padding:4px;">P4</th><th style="border:1px solid #475569; padding:4px;">Def Anual</th></tr></thead><tbody>`;
             } else {
-                html += `<th style="border:1px solid #475569; padding:4px;">Comp(30)</th><th style="border:1px solid #475569; padding:4px;">Part(10)</th><th style="border:1px solid #475569; padding:4px;">Act(20)</th><th style="border:1px solid #475569; padding:4px;">Exam(40)</th><th style="border:1px solid #475569; padding:4px;">Def</th><th style="border:1px solid #475569; padding:4px;">Fallas</th></tr></thead><tbody>`;
+                html += `<th style="border:1px solid #475569; padding:4px;">Comp(30)</th><th style="border:1px solid #475569; padding:4px;">Part(10)</th><th style="border:1px solid #475569; padding:4px;">Act(20)</th><th style="border:1px solid #475569; padding:4px;">Exam(40)</th><th style="border:1px solid #475569; padding:4px;">Def</th><th style="border:1px solid #475569; padding:4px;">Fallas (Mat.)</th></tr></thead><tbody>`;
             }
 
             ests.forEach((e, i) => {
