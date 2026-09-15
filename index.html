@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Súper Cuaderno Docente - SIEE Cloud 2.0</title>
-    <!-- Actualizado al motor moderno de Tailwind para que los colores no fallen -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -194,14 +193,13 @@
                 <textarea id="dba-input" rows="2" class="w-full border border-gray-300 rounded p-2 text-sm focus:border-blue-500 outline-none transition" placeholder="Ej: Comprende el ciclo de vida..." onblur="window.guardarDBA()"></textarea>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                    <!-- BOTONES CORREGIDOS PARA QUE SUS COLORES SE VEAN PERFECTOS EN TAILWIND V2 -->
                     <button id="btn-vista-masiva" onclick="window.showMassiveView()" class="bg-yellow-500 hover:bg-yellow-400 text-white p-2 rounded text-sm font-bold transition shadow-sm w-full">
                         <i class="fa-solid fa-bolt mr-1"></i> Notas Rápido
                     </button>
                     <button onclick="window.showGroupStats()" class="bg-indigo-500 hover:bg-indigo-400 text-white p-2 rounded text-sm font-medium transition shadow-sm w-full">
                         <i class="fa-solid fa-chart-simple mr-1"></i> Estadísticas
                     </button>
-                    <button onclick="window.showAsistenciaView()" class="bg-green-600 hover:bg-green-500 text-white p-2 rounded text-sm font-bold transition shadow-sm w-full sm:col-span-2">
+                    <button onclick="window.showAsistenciaView()" class="bg-teal-600 hover:bg-teal-500 text-white p-2 rounded text-sm font-bold transition shadow-sm w-full sm:col-span-2">
                         <i class="fa-solid fa-clipboard-user mr-1"></i> Llamar a Lista (Asistencia)
                     </button>
                     <button onclick="window.printPlanilla()" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded text-sm font-medium transition shadow-sm sm:col-span-2 w-full mt-1">
@@ -243,13 +241,12 @@
                 <i class="fa-solid fa-arrow-left text-4xl sm:text-5xl mb-4 text-gray-300 animate-pulse hidden lg:inline-block"></i>
                 <i class="fa-solid fa-arrow-up text-4xl sm:text-5xl mb-4 text-gray-300 animate-pulse lg:hidden"></i>
                 <p class="text-base sm:text-lg font-bold">Selecciona un estudiante o mira las estadísticas.</p>
-                <p class="text-xs sm:text-sm mt-2 font-medium text-blue-500">Versión 2.1 - SIEE Profesional (Estable)</p>
+                <p class="text-xs sm:text-sm mt-2 font-medium text-blue-500">Versión 2.0.9 - SIEE Profesional (Estable)</p>
             </div>
             <div id="contenido-dinamico" class="hidden w-full"></div>
         </div>
     </div>
 
-    <!-- Container exclusively for generating PDF/Print views -->
     <div id="vista-impresion" class="print-only"></div>
 
     <script type="module">
@@ -670,14 +667,13 @@
             window.renderListaEstudiantes();
             
             // --- ESCUDO ANTI-BORRADO PROFUNDO ---
-            // Evita que Firebase recargue la pantalla si el profe está digitando notas masivas
+            // Evita que Firebase recargue la pantalla si el profe está digitando notas masivas o en un perfil
             let isMasivaDirty = false;
             if (document.getElementById('m-tema')) {
                 if (document.getElementById('m-tema').value.trim() !== '') isMasivaDirty = true;
                 document.querySelectorAll('.m-val').forEach(i => { if (i.value.trim() !== '') isMasivaDirty = true; });
             }
 
-            // Evita que se recargue si está digitando una nota individual o una observación
             let isIndivDirty = false;
             if (document.getElementById('nota-val')) {
                 if (document.getElementById('nota-val').value.trim() !== '') isIndivDirty = true;
@@ -906,21 +902,45 @@
             });
         };
 
+        // --- CALCULO INTELIGENTE DE FALLAS (Agrupa por fecha) ---
         window.getFallasInfo = (est, periodoReq) => {
-            let fallasTotales = 0; let fallasJustificadas = 0;
-            const contar = (arr) => {
+            let fechasFaltas = {}; // Almacena 'DD/MM/YYYY' -> esJustificada (true/false)
+            
+            const procesar = (arr) => {
                 if(!arr) return;
                 arr.forEach(item => {
                     if(periodoReq === 'final' || parseInt(item.periodo) === parseInt(periodoReq)) {
                         if(item.asistio === false || item.asistio === "false") {
-                            fallasTotales++;
-                            if(item.justificada === true || item.justificada === "true") { fallasJustificadas++; }
+                            let isJust = (item.justificada === true || item.justificada === "true");
+                            // Si el niño ya tiene falta ese día, chequeamos si ALGUNA de las notas justifica el día.
+                            if (fechasFaltas[item.fecha] !== undefined) {
+                                fechasFaltas[item.fecha] = fechasFaltas[item.fecha] || isJust;
+                            } else {
+                                fechasFaltas[item.fecha] = isJust;
+                            }
                         }
                     }
                 });
             };
-            contar(est.notas); contar(est.registro_asistencia);
-            return { totales: fallasTotales, justificadas: fallasJustificadas, injustificadas: fallasTotales - fallasJustificadas };
+            
+            procesar(est.notas);
+            procesar(est.registro_asistencia);
+            
+            let fallasTotales = Object.keys(fechasFaltas).length;
+            let fallasJustificadas = Object.values(fechasFaltas).filter(j => j).length;
+            
+            // Construimos un array de texto para el reporte PDF detallado
+            let detalleArray = [];
+            for (const [fecha, isJust] of Object.entries(fechasFaltas)) {
+                detalleArray.push(`${fecha} ${isJust ? '(Excusa)' : '(Injustificada)'}`);
+            }
+            
+            return { 
+                totales: fallasTotales, 
+                justificadas: fallasJustificadas, 
+                injustificadas: fallasTotales - fallasJustificadas,
+                detalle: detalleArray
+            };
         };
 
         window.calcularPromedios = (notasIn, periodoReq = window.periodoActivo) => {
@@ -1166,7 +1186,7 @@
                             </div>
                             <div class="w-full sm:w-24 flex sm:flex-col items-center justify-between sm:justify-start">
                                 <label class="block text-[11px] font-bold text-gray-500 sm:mb-2" title="Marcar si el estudiante trajo excusa justificada">Excusa</label>
-                                <input type="checkbox" id="nota-justificada" disabled class="w-5 h-5 accent-green-600">
+                                <input type="checkbox" id="nota-justificada" disabled class="w-5 h-5 accent-green-500">
                             </div>
                             <button type="submit" id="btn-guardar-nota" class="w-full sm:w-auto bg-green-600 text-white px-5 py-2 rounded font-bold hover:bg-green-500 shadow transition"><i class="fa-solid fa-plus mr-2 sm:mr-0"></i><span class="sm:hidden">Guardar Nota</span></button>
                         </form>
@@ -1289,6 +1309,7 @@
             if (window.periodoActivo === 'final') return window.customAlert("No puedes usar calificación rápida en Acumulado Anual.");
             window.estudianteActivo = null; document.getElementById('mensaje-vacio').classList.add('hidden');
             const panel = document.getElementById('contenido-dinamico'); panel.classList.remove('hidden');
+
             let ests = window.appState.grados[window.appState.gradoActivo].estudiantes;
             
             panel.innerHTML = `
@@ -1327,7 +1348,7 @@
                                     <td class="p-3 font-medium text-gray-700">${window.escapeHTML(e.nombre)}</td>
                                     <td class="p-2"><input type="number" id="m-val-${e.id}" step="0.1" min="1.0" max="5.0" class="m-val border rounded p-2 w-full text-center font-bold outline-none focus:border-blue-500" ${!window.esPropietario ? 'disabled' : ''}></td>
                                     <td class="p-2 text-center"><input type="checkbox" id="m-asis-${e.id}" class="m-asis w-5 h-5 accent-blue-600" checked onchange="document.getElementById('m-just-${e.id}').disabled = this.checked; if(this.checked) document.getElementById('m-just-${e.id}').checked = false;" ${!window.esPropietario ? 'disabled' : ''}></td>
-                                    <td class="p-2 text-center"><input type="checkbox" id="m-just-${e.id}" class="m-just w-5 h-5 accent-green-600 cursor-pointer" disabled ${!window.esPropietario ? 'disabled' : ''}></td>
+                                    <td class="p-2 text-center"><input type="checkbox" id="m-just-${e.id}" class="m-just w-5 h-5 accent-green-500 cursor-pointer" disabled ${!window.esPropietario ? 'disabled' : ''}></td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1369,24 +1390,24 @@
             panel.innerHTML = `
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4">
                     <div>
-                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800"><i class="fa-solid fa-clipboard-user text-green-700 mr-2"></i> Llamar a Lista - Periodo ${window.periodoActivo}</h2>
+                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800"><i class="fa-solid fa-clipboard-user text-teal-600 mr-2"></i> Llamar a Lista - Periodo ${window.periodoActivo}</h2>
                         <p class="text-sm text-gray-500 font-bold">${window.escapeHTML(window.asignaturaActiva)} - Grado ${window.appState.gradoActivo}°</p>
                     </div>
                     <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                         <button onclick="window.imprimirReporteAsistencia()" class="bg-gray-800 text-white px-4 py-2 rounded shadow hover:bg-gray-700 text-sm font-bold no-print w-full sm:w-auto"><i class="fa-solid fa-print mr-2"></i>Reporte Detallado</button>
-                        ${window.esPropietario ? `<button onclick="window.guardarAsistenciaMasiva()" class="bg-green-700 text-white px-4 py-2 rounded font-bold shadow hover:bg-green-600 transition w-full sm:w-auto"><i class="fa-solid fa-save mr-1"></i> Guardar Lista</button>` : `<span class="bg-gray-200 text-gray-500 px-4 py-2 rounded font-bold shadow-inner">Modo Lectura</span>`}
+                        ${window.esPropietario ? `<button onclick="window.guardarAsistenciaMasiva()" class="bg-teal-600 text-white px-4 py-2 rounded font-bold shadow hover:bg-teal-500 transition w-full sm:w-auto"><i class="fa-solid fa-save mr-1"></i> Guardar Lista</button>` : `<span class="bg-gray-200 text-gray-500 px-4 py-2 rounded font-bold shadow-inner">Modo Lectura</span>`}
                     </div>
                 </div>
                 
-                <div class="bg-green-50 p-4 rounded-lg border border-green-200 mb-6 shadow-sm">
-                    <label class="block text-xs font-bold text-green-800 mb-1">Fecha de la clase</label>
-                    <input type="date" id="a-fecha" class="w-full sm:w-48 border-green-300 rounded p-2 text-sm outline-none font-bold" value="${window.getFechaHoyInput()}" onchange="window.renderAsistenciaTabla()" ${!window.esPropietario ? 'disabled' : ''}>
-                    <p class="text-xs text-green-700 mt-2"><i class="fa-solid fa-circle-info"></i> Desmarca "Asistió" si el alumno faltó. Esto habilitará la casilla de "Excusa" por si trajo justificativo. Al cambiar la fecha puedes ver y editar faltas anteriores.</p>
+                <div class="bg-teal-50 p-4 rounded-lg border border-teal-200 mb-6 shadow-sm">
+                    <label class="block text-xs font-bold text-teal-800 mb-1">Fecha de la clase</label>
+                    <input type="date" id="a-fecha" class="w-full sm:w-48 border-teal-300 rounded p-2 text-sm outline-none font-bold" value="${window.getFechaHoyInput()}" onchange="window.renderAsistenciaTabla()" ${!window.esPropietario ? 'disabled' : ''}>
+                    <p class="text-xs text-teal-700 mt-2"><i class="fa-solid fa-circle-info"></i> Desmarca "Asistió" si el alumno faltó. Esto habilitará la casilla de "Excusa" por si trajo justificativo. Al cambiar la fecha puedes ver y editar faltas anteriores.</p>
                 </div>
 
                 <div class="overflow-x-auto bg-white shadow-sm rounded border">
                     <table class="w-full text-sm border-collapse min-w-[500px]">
-                        <thead class="bg-green-800 text-white text-left">
+                        <thead class="bg-teal-800 text-white text-left">
                             <tr><th class="p-3">#</th><th class="p-3">Estudiante</th><th class="p-3 text-center">¿Asistió?</th><th class="p-3 text-center">¿Trajo Excusa?</th></tr>
                         </thead>
                         <tbody id="a-lista"></tbody>
@@ -1411,8 +1432,8 @@
                     <tr class="border-b hover:bg-gray-50" data-id="${e.id}">
                         <td class="p-3 text-gray-400 font-bold">${idx + 1}</td>
                         <td class="p-3 font-medium text-gray-700">${window.escapeHTML(e.nombre)}</td>
-                        <td class="p-3 text-center"><input type="checkbox" class="a-asis w-5 h-5 accent-green-700 cursor-pointer" ${asistio?'checked':''} onchange="document.getElementById('a-just-${e.id}').disabled = this.checked; if(this.checked) document.getElementById('a-just-${e.id}').checked = false;" ${!window.esPropietario ? 'disabled' : ''}></td>
-                        <td class="p-3 text-center"><input type="checkbox" id="a-just-${e.id}" class="a-just w-5 h-5 accent-green-600 cursor-pointer" ${justificada?'checked':''} ${asistio || !window.esPropietario ? 'disabled' : ''}></td>
+                        <td class="p-3 text-center"><input type="checkbox" class="a-asis w-5 h-5 accent-teal-600 cursor-pointer" ${asistio?'checked':''} onchange="document.getElementById('a-just-${e.id}').disabled = this.checked; if(this.checked) document.getElementById('a-just-${e.id}').checked = false;" ${!window.esPropietario ? 'disabled' : ''}></td>
+                        <td class="p-3 text-center"><input type="checkbox" id="a-just-${e.id}" class="a-just w-5 h-5 accent-green-500 cursor-pointer" ${justificada?'checked':''} ${asistio || !window.esPropietario ? 'disabled' : ''}></td>
                     </tr>
                 `;
             }).join('');
@@ -1437,6 +1458,38 @@
             window.guardarEnNube(); window.showToast(`Asistencia guardada para el ${fG}`, "success");
         };
 
+        window.imprimirReporteAsistencia = () => {
+            let ests = [...window.appState.grados[window.appState.gradoActivo].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+            let style = document.createElement('style'); 
+            style.innerHTML = `@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`; 
+            document.head.appendChild(style);
+            
+            let header = window.getHeaderImpresion(`REPORTE DE INASISTENCIAS - GRADO ${window.appState.gradoActivo}°<br><span style="font-size:10px; font-weight:normal;">ASIGNATURA: ${window.escapeHTML(window.asignaturaActiva)} | PERIODO ${window.periodoActivo}</span>`, "");
+            
+            let html = `<div style="padding: 15px; background: white; font-family: Arial, sans-serif;">${header}
+                <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:20px;">
+                <thead><tr style="background:#0ea5e9; color:white;"><th style="border:1px solid #475569; padding:6px; width:5%;">No.</th><th style="border:1px solid #475569; padding:6px; text-align:left; width:35%;">Estudiante</th><th style="border:1px solid #475569; padding:6px; width:10%;">Totales</th><th style="border:1px solid #475569; padding:6px; text-align:left; width:50%;">Detalle de Fechas (Excusas)</th></tr></thead><tbody>`;
+            
+            ests.forEach((e, i) => { 
+                let infoFallas = window.getFallasInfo(e, window.periodoActivo);
+                let detalleStr = infoFallas.detalle.length > 0 ? infoFallas.detalle.join(', ') : 'Asistencia Perfecta';
+                let colorDetalle = infoFallas.detalle.length > 0 ? 'color:red;' : 'color:green; font-style:italic;';
+
+                html += `<tr>
+                    <td style="border:1px solid #475569; text-align:center; padding:4px;">${i+1}</td>
+                    <td style="border:1px solid #475569; padding:4px; font-weight:bold;">${window.escapeHTML(e.nombre)}</td>
+                    <td style="border:1px solid #475569; text-align:center; padding:4px; font-weight:bold; color:red;">${infoFallas.totales}</td>
+                    <td style="border:1px solid #475569; padding:4px; font-size:9px; ${colorDetalle}">${detalleStr}</td>
+                </tr>`; 
+            });
+            
+            html += `</tbody></table>
+            <div style="margin-top:50px; text-align:center; font-size:10px; font-weight:bold;"><div style="border-top:1px solid black; width:250px; margin:0 auto 5px;"></div>Firma Docente Titular</div></div>`;
+            
+            document.getElementById('vista-impresion').innerHTML = html;
+            setTimeout(() => { window.print(); document.getElementById('vista-impresion').innerHTML = ''; document.head.removeChild(style); }, 200);
+        };
+
         window.showGroupStats = () => {
             window.estudianteActivo = null; document.getElementById('mensaje-vacio').classList.add('hidden');
             const panel = document.getElementById('contenido-dinamico'); panel.classList.remove('hidden');
@@ -1446,11 +1499,7 @@
             
             ests.forEach(e => {
                 let p = window.calcularPromedios(e.notas, window.periodoActivo).def;
-                if(p == 0) conteo.sin++;
-                else if(p >= 4.6) conteo.superior++;
-                else if(p >= 4.0) conteo.alto++;
-                else if(p >= 3.0) conteo.basico++;
-                else conteo.bajo++;
+                if(p == 0) conteo.sin++; else if(p >= 4.6) conteo.superior++; else if(p >= 4.0) conteo.alto++; else if(p >= 3.0) conteo.basico++; else conteo.bajo++;
             });
 
             panel.innerHTML = `
@@ -1486,39 +1535,18 @@
             });
         };
 
-        window.imprimirReporteAsistencia = () => {
-            let ests = [...window.appState.grados[window.appState.gradoActivo].estudiantes].sort((a,b)=>a.nombre.localeCompare(b.nombre));
-            let style = document.createElement('style'); style.innerHTML = `@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`; document.head.appendChild(style);
-            let header = window.getHeaderImpresion(`REPORTE DE INASISTENCIAS - GRADO ${window.appState.gradoActivo}°<br><span style="font-size:10px; font-weight:normal;">ASIGNATURA: ${window.escapeHTML(window.asignaturaActiva)} | PERIODO ${window.periodoActivo}</span>`, "");
-            
-            let html = `<div style="padding: 15px; background: white; font-family: Arial, sans-serif;">${header}
-                <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:20px;">
-                <thead><tr style="background:#0ea5e9; color:white;"><th style="border:1px solid #475569; padding:6px; width:5%;">No.</th><th style="border:1px solid #475569; padding:6px; text-align:left; width:35%;">Estudiante</th><th style="border:1px solid #475569; padding:6px; width:10%;">Totales</th><th style="border:1px solid #475569; padding:6px; text-align:left; width:50%;">Detalle de Fechas (Excusas)</th></tr></thead><tbody>`;
-            
-            ests.forEach((e, i) => { 
-                let infoFallas = window.getFallasInfo(e, window.periodoActivo);
-                let fechasFaltas = [];
-                if(e.notas) { e.notas.forEach(n => { if(parseInt(n.periodo) === parseInt(window.periodoActivo) && (n.asistio === false || n.asistio === "false")) fechasFaltas.push(`${n.fecha} ${n.justificada ? '(Excusa)' : '(Injustificada)'}`); }); }
-                if(e.registro_asistencia) { e.registro_asistencia.forEach(r => { if(parseInt(r.periodo) === parseInt(window.periodoActivo) && (r.asistio === false || r.asistio === "false")) fechasFaltas.push(`${r.fecha} ${r.justificada ? '(Excusa)' : '(Injustificada)'}`); }); }
-                let fechasUnicas = [...new Set(fechasFaltas)];
-                let detalleStr = fechasUnicas.length > 0 ? fechasUnicas.join(', ') : 'Asistencia Perfecta';
-                let colorDetalle = fechasUnicas.length > 0 ? 'color:red;' : 'color:green; font-style:italic;';
-
-                html += `<tr><td style="border:1px solid #475569; text-align:center; padding:4px;">${i+1}</td><td style="border:1px solid #475569; padding:4px; font-weight:bold;">${window.escapeHTML(e.nombre)}</td><td style="border:1px solid #475569; text-align:center; padding:4px; font-weight:bold; color:red;">${infoFallas.totales}</td><td style="border:1px solid #475569; padding:4px; font-size:9px; ${colorDetalle}">${detalleStr}</td></tr>`; 
-            });
-            
-            html += `</tbody></table><div style="margin-top:50px; text-align:center; font-size:10px; font-weight:bold;"><div style="border-top:1px solid black; width:250px; margin:0 auto 5px;"></div>Firma Docente Titular</div></div>`;
-            document.getElementById('vista-impresion').innerHTML = html;
-            setTimeout(() => { window.print(); document.getElementById('vista-impresion').innerHTML = ''; document.head.removeChild(style); }, 200);
-        };
-
         window.renderPortalFamiliar = () => {
             document.getElementById('panel-izquierdo').classList.add('hidden');
             document.getElementById('panel-derecho').classList.remove('lg:w-2/3'); document.getElementById('panel-derecho').classList.add('w-full');
             document.getElementById('mensaje-vacio').classList.add('hidden');
+            
             document.getElementById('nav-subtitle').innerHTML = `Portal Familiar - Estudiante: <b class="text-yellow-300">${window.escapeHTML(window.datosPadre.nombre)}</b>`;
-            document.getElementById('logo-hover-icon').classList.add('hidden'); window.aplicarLogoUI(); 
-            const panel = document.getElementById('contenido-dinamico'); panel.classList.remove('hidden');
+            document.getElementById('logo-hover-icon').classList.add('hidden');
+            
+            window.aplicarLogoUI(); 
+
+            const panel = document.getElementById('contenido-dinamico');
+            panel.classList.remove('hidden');
 
             let grado = window.datosPadre.grado; let nombre = window.datosPadre.nombre;
             let filasAsignaturas = ""; let sumaDefinitivas = 0; let totalAsignaturas = 0; let totalFallasGeneral = 0; let totalFallasJustificadas = 0;
@@ -1530,12 +1558,25 @@
                     let estAsig = asigData.grados[grado].estudiantes.find(e => e.nombre.toLowerCase() === nombre.toLowerCase());
                     if(estAsig) {
                         if(estAsig.foto && !fotoFamiliar) fotoFamiliar = estAsig.foto;
-                        let promedios = window.calcularPromedios(estAsig.notas, 'final'); let des = window.getDesempeno(promedios.def);
+
+                        let promedios = window.calcularPromedios(estAsig.notas, 'final');
+                        let des = window.getDesempeno(promedios.def);
                         let infoFallas = window.getFallasInfo(estAsig, 'final');
+                        
                         sumaDefinitivas += parseFloat(promedios.def); totalAsignaturas++; totalFallasGeneral += infoFallas.totales; totalFallasJustificadas += infoFallas.justificadas;
                         datosGrafico.materias.push(asigNombre); datosGrafico.notas.push(promedios.def);
 
-                        filasAsignaturas += `<tr class="border-b hover:bg-gray-50 transition"><td class="p-3 bg-gray-50 font-bold text-gray-800">${window.escapeHTML(asigNombre)}</td><td class="p-3 text-center text-gray-600 font-bold">${promedios.p1>0?promedios.p1:'-'}</td><td class="p-3 text-center text-gray-600 font-bold">${promedios.p2>0?promedios.p2:'-'}</td><td class="p-3 text-center text-gray-600 font-bold">${promedios.p3>0?promedios.p3:'-'}</td><td class="p-3 text-center text-gray-600 font-bold">${promedios.p4>0?promedios.p4:'-'}</td><td class="p-3 text-center text-base sm:text-lg font-black text-gray-800 bg-blue-50">${promedios.def}</td><td class="p-3 text-center font-bold ${des.color}">${des.texto}</td></tr>`;
+                        filasAsignaturas += `
+                            <tr class="border-b hover:bg-gray-50 transition">
+                                <td class="p-3 bg-gray-50 font-bold text-gray-800">${window.escapeHTML(asigNombre)}</td>
+                                <td class="p-3 text-center text-gray-600 font-bold">${promedios.p1>0?promedios.p1:'-'}</td>
+                                <td class="p-3 text-center text-gray-600 font-bold">${promedios.p2>0?promedios.p2:'-'}</td>
+                                <td class="p-3 text-center text-gray-600 font-bold">${promedios.p3>0?promedios.p3:'-'}</td>
+                                <td class="p-3 text-center text-gray-600 font-bold">${promedios.p4>0?promedios.p4:'-'}</td>
+                                <td class="p-3 text-center text-base sm:text-lg font-black text-gray-800 bg-blue-50">${promedios.def}</td>
+                                <td class="p-3 text-center font-bold ${des.color}">${des.texto}</td>
+                            </tr>
+                        `;
                     }
                 }
             }
