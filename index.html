@@ -669,8 +669,27 @@
             window.aplicarLogoUI();
             window.renderListaEstudiantes();
             
-            if(window.estudianteActivo) window.renderVistaIndividual();
-            else if(!document.getElementById('contenido-dinamico').classList.contains('hidden') && !window.estudianteActivo && !document.getElementById('grafico-grupal') && !document.getElementById('a-lista')) window.showMassiveView();
+            // --- ESCUDO ANTI-BORRADO PROFUNDO ---
+            // Evita que Firebase recargue la pantalla si el profe está digitando notas masivas
+            let isMasivaDirty = false;
+            if (document.getElementById('m-tema')) {
+                if (document.getElementById('m-tema').value.trim() !== '') isMasivaDirty = true;
+                document.querySelectorAll('.m-val').forEach(i => { if (i.value.trim() !== '') isMasivaDirty = true; });
+            }
+
+            // Evita que se recargue si está digitando una nota individual o una observación
+            let isIndivDirty = false;
+            if (document.getElementById('nota-val')) {
+                if (document.getElementById('nota-val').value.trim() !== '') isIndivDirty = true;
+                if (document.activeElement && (document.activeElement.id === 'nota-tema' || document.activeElement.id === 'obs-estudiante')) isIndivDirty = true;
+            }
+
+            if(window.estudianteActivo) {
+                if (!isIndivDirty) window.renderVistaIndividual();
+            }
+            else if(!document.getElementById('contenido-dinamico').classList.contains('hidden') && !window.estudianteActivo && !document.getElementById('grafico-grupal') && !document.getElementById('a-lista')) {
+                if (!isMasivaDirty) window.showMassiveView();
+            }
         };
 
         window.cambiarPeriodo = () => {
